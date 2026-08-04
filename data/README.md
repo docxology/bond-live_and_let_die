@@ -1,13 +1,6 @@
-# live_and_let_die/data
+# data — candidate claims
 
-Project-maintained **inputs** for the code exemplar (not pipeline outputs).
-
-## Quick reference
-
-| File | Role |
-| --- | --- |
-| `claim_ledger.yaml` | Source-backed numeric and artifact claims for evidence validation |
-
-Generated analysis outputs belong under `output/` during pipeline runs, not here.
-
-Schema and edit protocol: [`AGENTS.md`](AGENTS.md).
+`claim_ledger.yaml` registers sourced numeric claims for evidence-registry
+validation. All values are computed deterministically by the code (see the
+`source:` field for each claim) — never hand-author values that the code
+measures.

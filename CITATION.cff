@@ -1,22 +1,25 @@
-authors:
-- affiliation: Active Inference Institute
-  family-names: Friedman
-  given-names: Daniel Ari
-  orcid: 0000-0001-6232-9096
 cff-version: 1.2.0
-date-released: '2026-07-10'
-doi: 10.5281/zenodo.20417136
+message: "If you use this software, please cite it as below."
+title: "Live and Let Die: SAN MONIQUE — Special-Agent Mission Software"
+abstract: >-
+  PROJECT BOND film package (codename SAN MONIQUE). Deterministic
+  special-agent mission software for the narcotics operation of Live and Let
+  Die (1973): narcotics supply-graph analytics (max-flow/min-cut bottleneck
+  analysis), voodoo-coded communiqué deciphering (keyword substitution
+  ciphers, frequency analysis), and Caribbean island ops planning over
+  mangrove/crocodile terrain. Implements the BOND-API MissionProvider protocol.
+authors:
+  - family-names: Friedman
+    given-names: Daniel Ari
+    orcid: "https://orcid.org/0000-0001-6232-9096"
+    affiliation: "Active Inference Institute"
 keywords:
-- optimization algorithms
-- gradient descent
-- convergence analysis
-- numerical methods
-- mathematical programming
-- reproducible research
-- infrastructure automation
+  - bond
+  - narcotics-supply-graph
+  - max-flow
+  - min-cut
+  - substitution-cipher
+  - frequency-analysis
+  - terrain-pathfinding
 license: MIT
-message: If you use this software, please cite it using the metadata from this file.
-repository-code: https://github.com/docxology/live_and_let_die
-title: Convergence Analysis of Gradient Descent Optimization
-type: software
-version: 2.5.2
+version: 0.1.0

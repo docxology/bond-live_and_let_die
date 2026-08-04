@@ -1,57 +1,33 @@
+# Claim ledger — LIVE AND LET DIE / SAN MONIQUE
+# Registers sourced numeric claims for evidence-registry validation. All
+# values are generated deterministically by the code, never hand-authored.
+
 claims:
-  - claim_id: figure-export-dpi
-    kind: number
-    value: 300
-    source: projects/working/bond/live_and_let_die/src/viz_config.py plotting defaults (dpi)
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/convergence_plot.png
-  - claim_id: step-size-sensitivity-cap
-    kind: number
-    value: 500
-    source: projects/working/bond/live_and_let_die/src/sweeps.py sensitivity_sweep max_iter cap
-    source_tier: generated_metric
-    freshness: active
-    artifact_path: output/figures/step_size_sensitivity.png
-  - claim_id: stability-log-lower
-    kind: number
-    value: -6
-    source: projects/working/bond/live_and_let_die/src/figures/scientific_stability.py stability visualization caption
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/stability_analysis.png
-  - claim_id: solution-relative-error-exponent
-    kind: number
-    value: -4
-    source: projects/working/bond/live_and_let_die/manuscript/03_results.md stated precision threshold
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: manuscript/03_results.md
-  - claim_id: stability-log-upper
-    kind: number
-    value: -9
-    source: projects/working/bond/live_and_let_die/src/figures/scientific_stability.py stability visualization caption
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/stability_analysis.png
-  - claim_id: benchmark-tolerance-exponent
-    kind: number
-    value: -10
-    source: projects/working/bond/live_and_let_die/scripts/optimization_analysis.py dimensional benchmark tolerance
-    source_tier: project_source
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
-  - claim_id: benchmark-min-iterations
-    kind: number
-    value: 219
-    source: projects/working/bond/live_and_let_die/manuscript/03_results.md benchmark caption
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
-  - claim_id: benchmark-max-iterations
-    kind: number
-    value: 238
-    source: projects/working/bond/live_and_let_die/manuscript/03_results.md benchmark caption
-    source_tier: manuscript_claim
-    freshness: active
-    artifact_path: output/figures/performance_benchmark.png
+  - id: "supply-max-flow"
+    description: "Maximum narcotics throughput from production to market"
+    value: 220
+    source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> max_flow_total"
+  - id: "supply-min-cut"
+    description: "Minimum cut bounding total throughput"
+    value: 220
+    source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> min_cut_value"
+  - id: "supply-critical-node"
+    description: "Highest-value interdiction target (transit node)"
+    value: "airfield"
+    source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> critical_transit_node"
+  - id: "supply-disruption"
+    description: "Miami throughput lost by neutralizing the critical node"
+    value: 150
+    source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> disruption_units"
+  - id: "comms-plaintext"
+    description: "Deciphered voodoo communiqué"
+    value: "KANANGA LETS THE SNAKE BITE"
+    source: "src/live_and_let_die/coded_comms.py::SAN_MONIQUE_PLAINTEXT"
+  - id: "ops-route-cost"
+    description: "Infiltration route total cost"
+    value: 41
+    source: "src/live_and_let_die/island_ops.py::plan_san_monique_route -> cost"
+  - id: "ops-crocodile-cells"
+    description: "Crocodile-water cells crossed by the infiltration route"
+    value: 4
+    source: "src/live_and_let_die/island_ops.py::plan_san_monique_route -> crocodile_cells"

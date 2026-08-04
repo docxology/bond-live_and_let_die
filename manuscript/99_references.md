@@ -1,10 +1,11 @@
-# References {#sec:references}
+# References
 
-Bibliography lives in [`manuscript/references.bib`](references.bib) and is read by Pandoc during PDF render. The build pipeline invokes Pandoc with `--natbib`, so every `[@key]` citation in the manuscript is rewritten to the appropriate `\cite{}`/`\citep{}`/`\citet{}` LaTeX command and resolved against the bib file.
+- Live and Let Die (1973), Eon Productions / United Artists — source film for
+  the SAN MONIQUE mission scenario. See `references.bib` entry `film_lald`.
+- Cormen, T. H., Leiserson, C. E., Rivest, R. L., & Stein, C. (2009).
+  *Introduction to Algorithms*, 3rd ed. MIT Press — Dijkstra, Edmonds-Karp
+  max-flow, and the residual minimum-cut theorem.
+- Stinson, D. R. & Paterson, M. B. (2019). *Cryptography: Theory and Practice*,
+  4th ed. CRC Press — monoalphabetic substitution and frequency analysis.
 
-To validate that `references.bib` is syntactically clean and contains the required fields per entry type:
-
-```bash
-uv run python -m infrastructure.reference.citation.cli validate \
-    projects/working/bond/live_and_let_die/manuscript/references.bib --strict
-```
+Full bibliographic records are maintained in `manuscript/references.bib`.

@@ -1,19 +1,20 @@
-"""Pytest configuration for live_and_let_die tests."""
+"""Shared test configuration for the SAN MONIQUE package.
+
+Sets a headless matplotlib backend before any rendering import, and makes the
+package root and ``src/`` importable from tests regardless of the installed
+entry point.
+"""
+
+from __future__ import annotations
 
 import os
 import sys
+from pathlib import Path
 
-# Force headless backend for matplotlib in tests
+# Headless: tests must never open a display window.
 os.environ.setdefault("MPLBACKEND", "Agg")
 
-# Add src/ AND the repo root to path so the documented per-project pytest command
-# works from a clean environment. The project pyproject's `pythonpath` is
-# project-relative and omits the repo root, so without this the suite cannot import
-# `infrastructure` (tests collect-error). The project lives at
-# projects/templates/<name>/, so the repo root is three levels above ROOT.
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-SRC = os.path.join(ROOT, "src")
-REPO_ROOT = os.path.abspath(os.path.join(ROOT, "..", "..", ".."))
-for _path in (REPO_ROOT, SRC):
+PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+for _path in (str(PACKAGE_ROOT), str(PACKAGE_ROOT / "src")):
     if _path not in sys.path:
         sys.path.insert(0, _path)

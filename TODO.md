@@ -1,68 +1,54 @@
-# live_and_let_die TODO
+# TODO — LIVE AND LET DIE / SAN MONIQUE
 
-Forward-only backlog for the code-first numerical exemplar — the reference
-thin-orchestrator control-positive path for code-centric research projects.
+Phase-2 build status and declared integration points. This file reflects what
+was built and what is intentionally deferred.
 
-## Current validation evidence
+## Built (Phase 2, complete)
 
-- Manuscript pre-render gate: `uv run python -m infrastructure.validation.cli prerender projects/working/bond/live_and_let_die/manuscript --repo-root .`
-- Project tests and coverage: `uv run pytest projects/working/bond/live_and_let_die/tests/ --cov=projects/working/bond/live_and_let_die/src --cov-fail-under=90`
-- Stage 02 analysis must write `output/data/optimization_results.csv` before strict manuscript-variable generation: `uv run python scripts/pipeline/stage_02_analysis.py --project templates/live_and_let_die`
-- Stage 03 manuscript render: `uv run python scripts/pipeline/stage_03_render.py --project templates/live_and_let_die`
-- Stage 04 output validation: `uv run python scripts/pipeline/stage_04_validate.py --project templates/live_and_let_die`
-- Repo drift gate: `uv run python scripts/audit/check_template_drift.py --strict`
-- Code quality: `uv run ruff check projects/working/bond/live_and_let_die/src/` and `uv run mypy projects/working/bond/live_and_let_die/src/` must both pass clean.
-- Benchmark reproducibility: tracked benchmark reports and figures contain only deterministic facts; wall-clock timing is logged as a runtime diagnostic, and two-run byte-equality tests enforce the boundary.
-- Live test count and measured coverage percentage → [`docs/_generated/COUNTS.md`](../../../docs/_generated/COUNTS.md) (regenerated, never hardcoded here; both numbers drift faster than this file).
+- **Pure domain core** (3 modules, importable without bond-api):
+  - `src/live_and_let_die/supply_graph.py` — supply-graph analytics: Dijkstra
+    shortest paths, Edmonds-Karp max-flow, residual min-cut, edge- and
+    node-level disruption analysis, canonical San Monique graph + `analyze_san_monique()`.
+  - `src/live_and_let_die/coded_comms.py` — keyword (symbol-substitution)
+    cipher, encipher/decipher, frequency tables, frequency-attack solver,
+    cosine-similarity scoring, voodoo glyph roster.
+  - `src/live_and_let_die/island_ops.py` — terrain grid, 4-neighbour Dijkstra
+    routing, crocodile-exposure hazard metric.
+- **Mission adapter**: `src/live_and_let_die/mission.py` implements the FROZEN
+  BOND-API `MissionProvider` (film `live_and_let_die`, codename `SAN MONIQUE`),
+  deterministic provenance (seed 8, SHA-256 input hash), and registers gadgets
+  (`supply_graph_analyzer`, `communique_decipher`, `island_route_planner`) on
+  the `bond_api.GadgetRegistry`.
+- **Figures**: `src/live_and_let_die/figures/plots.py` renders the supply graph
+  and island-route figures to `output/figures/`.
+- **Manuscript**: `manuscript/config.yaml` + sections; all metrics injected via
+  `manuscript_variables.py` (no hardcoded prose numbers).
+- **CLIs**: `scripts/` thin wrappers per mission phase (brief/recon/plan/
+  execute/debrief) plus `00_preflight.py`, `run_mission.py`,
+  `generate_figures.py`, `z_generate_manuscript_variables.py`.
+- **Tests**: per-module real-data tests + mission end-to-end + manuscript
+  cross-ref gate + figure + subprocess script smoke. Live counts in
+  `docs/_generated/COUNTS.md`.
 
-## Accuracy pass — 2026-08-02 (measured)
+## Integration points (declared, not yet bound)
 
-- Prerender: clean (no render-blocking pitfalls, no undefined citations).
-- pytest: **242 passed**, **97.67 %** coverage on `src/` (floor 90 %).
-- Stage 02: 8/8 analysis scripts; 46 manuscript variables generated.
-- Stage 03: combined PDF rendered (25 pages), `Valid PDFs: 1/1`; 0 `^! ` lines in compile logs; 0 `??` in `pdftotext`.
-- Stage 04: all checks pass (PDF, bookends, markdown, structure, figure registry, evidence registry, design overlays, artifact manifest); rendered-provenance receipt written (54 sources / 18 config / 72 outputs).
-- Drift: `check_template_drift.py --project templates/live_and_let_die --strict` → no drift detected.
+- **Gadget payloads are opaque callables.** The `GadgetRegistry` stores the
+  pure analysers as-is. When `bond-utilities` ships its
+  `mission_io.record_provenance_outcome`, the mission `execute` outcome can
+  additionally persist through it; the pure core does not need to change.
+- **Coordinator binding.** `mission.py` exposes the provider under the stable
+  `MissionProvider` name; the `bond-coordinator` /
+  `bond-orchestrator` layer can drive it via `bond_api.discovery.load_provider`
+  with no further work.
+- **Manuscript rendering.** The numbered sections are hydrated to
+  `output/manuscript/`; wiring into the suite's Pandoc PDF pipeline is a
+  follow-up shared with the other films.
 
-### Fixed in this pass
+## Verification
 
-- `fig:complexity` caption corrected to the actual 3×2 six-panel layout; replaced the false "both saturate at the iteration cap" claim (α=2.5 terminates via `non_finite`) and described the stability-width and cross-profile bottom panels.
-- Agency-category boundary corrected to the code's `α < 0.3` threshold (`manuscript/03_results.md`).
-- Removed literal `{{CONFIG_*}}` / `{{RESULT_*}}` wildcard prose in `01_introduction.md` and `07_scope_and_related_work.md` so the rendered PDF no longer leaks raw braces.
-- `scripts/AGENTS.md` + `scripts/README.md`: listed the on-disk `04_benchmark_stage.py`, `08_connector_search.py`, `09_provenance_record.py`, `10_research_workflow.py`, `__init__.py`; replaced stale `[0.01, 0.05, 0.1, 0.2]` step-size grids with the configured six-value grid.
-- `tests/AGENTS.md` + `tests/README.md`: added `test_benchmark_support.py` to diagram, class line, and bullets.
-- Root `AGENTS.md`: refreshed `SRC_F` / `M_F` mermaid listings, ProgressBar grid, stray `##` heading.
-- `docs/AGENTS.md`: corrected the `{{VARIABLE}}` token count (28 → 46) and stale per-file line counts; `docs/syntax_guide.md`: `CONFIG_VERSION` 2.5.2, added missing `RESULT_*` / `ARTIFACT_*` / `STABILITY_FUNCTION` rows, corrected the "never use `\begin{equation}`" guidance (the manuscript uses that form and it resolves).
-- `manuscript/AGENTS.md`: version 2.5.2; File Inventory token lists now match the live per-file `{{TOKEN}}` usage exactly (verified programmatically).
-- `docs/README.md`: removed the stale "127 files, 14 subdirectories" literal (COUNTS.md is authoritative).
-- Added `.agents/README.md` and `.agents/skills/README.md` per the shared exemplar catalog contract; all relative cross-references resolve.
-
-## Integrity and template-status gaps
-
-- Keep this exemplar as the smallest reliable control-positive path for code-centric research projects.
-- Keep dashboard, API docs, figures, and manuscript variables generated from source, not hand-maintained output snapshots.
-- Add a project-local output validation script only if it checks artifacts beyond the generic Stage 04 validators.
-- Add or document a stable final artifact-manifest refresh path for single-stage analysis/render/copy checks. **Documented:** `infrastructure.core.pipeline.artifacts.snapshot_current_artifact_manifest` serves this role.
-
-## Configurable-surface gaps
-
-- Keep `manuscript/config.yaml.example` as the richer copy-and-customize template for publication, LLM, testing, and steganography toggles.
-- Add any future optimizer hyperparameter config under typed source loaders rather than reading ad hoc YAML from scripts.
-
-## Documentation and signposting gaps
-
-- Keep README quick-start commands aligned with the qualified project name `templates/live_and_let_die`.
-- Link new public artifacts from README, AGENTS, and `docs/_generated/exemplar_roster.md` through the generator.
-
-## Test and validator gaps
-
-- Add a negative control before widening optimizer claims beyond the bundled deterministic objectives.
-- Add dashboard schema assertions whenever dashboard fields or chart payloads change.
-- Close remaining infrastructure-path branch misses in `analysis/scientific_reports.py` and `analysis/workflow.py` with subprocess isolation tests mirroring `TestImportFallback` if coverage gates tighten further.
-
-## Ordered improvement ladder
-
-1. Preserve the strict analysis-to-manuscript variable contract.
-2. Add focused validators for any new generated artifact family.
-3. Expand benchmark scenarios only with deterministic seeds, expected-shape tests, and documented claim boundaries.
-4. Refresh generated docs after any public-surface change.
+```bash
+uv run pytest tests/ --cov=src --cov-fail-under=90
+uv run ruff check src/ scripts/ tests/ && uv run ruff format src/ scripts/ tests/
+uv run mypy src/ scripts/
+rg -n "template[_]code_project" .   # expectation: zero
+```

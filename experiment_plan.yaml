@@ -1,25 +1,29 @@
+# Experiment plan — LIVE AND LET DIE / SAN MONIQUE (advisory, declarative)
+
+# Declares the analysis conditions, primary metrics, and expected outputs.
+
 conditions:
-  - name: conservative_step
-    role: reference
-    description: "Stable gradient-descent step below the spectral bound."
-  - name: near_optimal_step
-    role: proposed
-    description: "Template-recommended step near the stable convergence region."
-  - name: aggressive_step
-    role: variant
-    description: "Stress condition near or above the stability boundary."
-metrics:
-  primary:
-    name: objective_value
-    direction: minimize
-protocol: "Run the deterministic quadratic optimization sweep with identical initialization, seeds, tolerance, and iteration cap across all declared step-size conditions."
+  supply_graph:
+    nodes: 7
+    edges: 10
+    sources: ["poppy_fields"]
+    markets: ["miami", "new_york"]
+  coded_comms:
+    keyword: "BARON"
+    alphabet: "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  island_ops:
+    grid: "9x9"
+    start: [8, 1]
+    goal: [0, 4]
+    terrain: ["road", "open", "beach", "mangrove", "swamp", "open water", "crocodile water", "cliff"]
+
+primary_metrics:
+  - "shortest production->market path cost"
+  - "max flow / min cut value"
+  - "critical transit node and disruption units"
+  - "deciphered communiqué plaintext"
+  - "infiltration route cost and crocodile-water cells"
+
 expected_figures:
-  - fig:convergence_plot
-  - fig:performance_benchmark
-  - fig:step_size_sensitivity
-expected_tables:
-  - tbl:optimization_results
-baselines:
-  - conservative_step
-ablations:
-  - aggressive_step
+  - "supply graph (route + bottleneck)"
+  - "island route over terrain"

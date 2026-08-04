@@ -1,52 +1,40 @@
 #!/usr/bin/env python3
-"""Thin orchestrator: generate and inject manuscript variables.
+"""SAN MONIQUE — hydrate manuscript variables and resolve the section tree.
 
-Reads experiment config and analysis outputs, writes
-``output/data/manuscript_variables.json``, and substitutes
-``{{TOKEN}}`` markers in manuscript sections into
-``output/manuscript/`` for PDF rendering.
-
-All computation lives in ``src/manuscript_variables``;
-all injection lives in
-``infrastructure.rendering.manuscript_injection``.
-
-Exit codes:
-    0   variables written and injected successfully
-    1   unexpected error
+Strict by default: any unresolved {{TOKEN}} fails. Generates
+output/data/manuscript_variables.json and copies resolved sections to
+output/manuscript/. Pass --allow-draft to relax strictness.
 """
 
 from __future__ import annotations
 
-import argparse
+import json
 import sys
 from pathlib import Path
 
-_PROJECT_ROOT = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(_PROJECT_ROOT))
-sys.path.insert(0, str(_PROJECT_ROOT.parents[2]))
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))  # noqa: E402
+
+from live_and_let_die.manuscript_variables import (  # noqa: E402
+    generate_variables,
+    resolve_manuscript_tree,
+)
 
 
 def main() -> int:
-    """CLI entry point."""
-    parser = argparse.ArgumentParser(description="Generate manuscript variables for live_and_let_die")
-    parser.add_argument(
-        "--allow-draft",
-        action="store_true",
-        help="Allow N/A fallbacks when analysis outputs are missing (non-pipeline draft mode)",
-    )
-    args = parser.parse_args()
+    allow_draft = "--allow-draft" in sys.argv[1:]
+    variables = generate_variables(require_outputs=not allow_draft)
 
-    from infrastructure.rendering.manuscript_injection import write_resolved_manuscript_tree
-    from src.manuscript_variables import generate_variables, save_variables
+    data_dir = ROOT / "output" / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    data_target = data_dir / "manuscript_variables.json"
+    data_target.write_text(json.dumps(variables, sort_keys=True, indent=2), encoding="utf-8")
 
-    variables = generate_variables(
-        _PROJECT_ROOT,
-        require_analysis_outputs=not args.allow_draft,
-    )
-    out_path = _PROJECT_ROOT / "output" / "data" / "manuscript_variables.json"
-    save_variables(variables, out_path)
-    write_resolved_manuscript_tree(_PROJECT_ROOT, variables)
-    print(str(out_path))
+    resolved_dir, files = resolve_manuscript_tree(variables, strict=not allow_draft)
+    print(f"wrote {data_target}")
+    print(f"resolved {len(files)} sections -> {resolved_dir}")
+    for name in files:
+        print(f"  {name}")
     return 0
 
 

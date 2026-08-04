@@ -5,6 +5,9 @@ __pycache__/
 *.pyc
 .benchmarks/
 
+# Regenerable artifacts (output/ is rebuilt by scripts; keep the tree clean)
+output/
+
 # Egg-info from local installs (any location — guards against renamed-fork drift).
 **/*.egg-info/
 

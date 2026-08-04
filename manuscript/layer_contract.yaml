@@ -1,5 +1,31 @@
-# Code-centric exemplar: optional monorepo adapters only.
-allow_infrastructure_imports:
-  - src/analysis/_infra.py
-  - src/_runtime.py
-  - src/benchmark_support.py
+# Layer contract for the LIVE AND LET DIE / SAN MONIQUE package.
+# Pure domain core must not import infrastructure.* or bond_api; the mission
+# adapter lays the frozen bond_api protocol on top of the pure core.
+
+infrastructure_boundary:
+  enforced: true
+  rule: "src/live_and_let_die/{supply_graph,coded_comms,island_ops}.py are pure; no infrastructure.* and no bond_api imports"
+  exempt:
+    - src/live_and_let_die/mission.py
+    - src/live_and_let_die/manuscript_variables.py
+
+architectural_layers:
+  - name: "domain core"
+    modules:
+      - "src/live_and_let_die/supply_graph.py"
+      - "src/live_and_let_die/coded_comms.py"
+      - "src/live_and_let_die/island_ops.py"
+    imports: ["stdlib", "numpy"]
+  - name: "protocol adapter"
+    modules: ["src/live_and_let_die/mission.py"]
+    imports: ["bond_api.protocol", "bond_api.registry", "domain core"]
+  - name: "manuscript hydration"
+    modules: ["src/live_and_let_die/manuscript_variables.py"]
+    imports: ["yaml", "mission", "domain core"]
+  - name: "figures"
+    modules: ["src/live_and_let_die/figures/plots.py"]
+    imports: ["matplotlib", "numpy", "domain core"]
+
+scripts:
+  rule: "thin orchestrators only"
+  imports: ["sys", "live_and_let_die.*"]

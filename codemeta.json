@@ -1,31 +1,21 @@
 {
-  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@context": ["https://doi.org/10.5063/schema/codemeta-2.0"],
   "@type": "SoftwareSourceCode",
+  "name": "Live and Let Die: SAN MONIQUE — Special-Agent Mission Software",
+  "codeRepository": "https://github.com/",
+  "license": "https://spdx.org/licenses/MIT",
+  "version": "0.1.0",
+  "programmingLanguage": { "@type": "ComputerLanguage", "name": "Python" },
   "author": [
     {
-      "@id": "https://orcid.org/0000-0001-6232-9096",
       "@type": "Person",
-      "affiliation": {
-        "@type": "Organization",
-        "name": "Active Inference Institute"
-      },
+      "givenName": "Daniel Ari",
       "familyName": "Friedman",
-      "givenName": "Daniel Ari"
+      "identifier": "https://orcid.org/0000-0001-6232-9096",
+      "affiliation": { "@type": "Organization", "name": "Active Inference Institute" }
     }
   ],
-  "codeRepository": "https://github.com/docxology/live_and_let_die",
-  "dateModified": "2026-07-10",
-  "identifier": "10.5281/zenodo.20417136",
-  "keywords": [
-    "optimization algorithms",
-    "gradient descent",
-    "convergence analysis",
-    "numerical methods",
-    "mathematical programming",
-    "reproducible research",
-    "infrastructure automation"
-  ],
-  "license": "https://spdx.org/licenses/MIT",
-  "name": "Convergence Analysis of Gradient Descent Optimization",
-  "version": "2.5.2"
+  "description": "PROJECT BOND film package (codename SAN MONIQUE): narcotics supply-graph analytics, voodoo-coded communiqué deciphering, and Caribbean island ops planning. Implements the BOND-API MissionProvider protocol over a deterministic, infrastructure-free domain core.",
+  "keywords": ["bond", "supply-graph", "max-flow", "min-cut", "substitution-cipher", "terrain-pathfinding"],
+  "runtimePlatform": "Python >= 3.10"
 }

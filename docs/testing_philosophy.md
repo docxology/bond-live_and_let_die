@@ -1,117 +1,35 @@
-# Testing Philosophy: The Zero-Mock Standard
+# Testing philosophy — LIVE AND LET DIE / SAN MONIQUE
 
-The Generalized Research Template strictly forbids mocking in scientific/mathematical validation.
+Tests are **real-data, deterministic, and mock-free**.
 
-## Why Zero Mocks?
+## Principles
 
-The core insight is architectural: if a function requires a mock to be tested, it is doing I/O, calling external systems, or producing side-effects — which means it belongs in `scripts/` (as a thin orchestrator), not in `src/` (as pure logic). The purity of `src/optimizer.py` is what makes zero-mock testing achievable. Every function in `src/optimizer.py` is deterministic and side-effect-free, so tests simply call functions with real numpy arrays and verify real mathematical outputs.
+1. **No mocks.** No `unittest.mock`, `MagicMock`, `mocker.patch`, or
+   `create_autospec`. We validate real computation: the canonical San Monique
+   datasets and the algorithms operating on them.
+2. **Deterministic assertions.** Every expected value is stable because the
+   inputs and algorithms are deterministic (fixed seed 8, no untracked RNG, no
+   wall-clock in artifacts). Tests assert exact known values (e.g. route cost
+   41, 4 crocodile cells, bottleneck airfield).
+3. **Coverage gate.** `uv run pytest tests/ --cov=src --cov-fail-under=90`
+   enforces ≥90% line+branch on `src/`. Live count in
+   `docs/_generated/COUNTS.md`.
+4. **Per-module real-data files.** `test_supply_graph.py`,
+   `test_coded_comms.py`, `test_island_ops.py` cover each pure module's
+   algorithm and error branches with real inputs.
+5. **End-to-end + cross-reference.** `test_mission.py` runs the full
+   `MissionProvider` lifecycle and the outcome JSON round-trip;
+   `test_manuscript_variables.py` holds the live `{{TOKEN}}` cross-reference
+   gate over `manuscript/[0-9]*.md`.
+6. **Subprocess smoke.** `test_scripts_smoke.py` runs each thin CLI with the
+   venv python from the package root, asserting exit code 0 and artifact
+   creation under `output/`.
 
-If you ever feel the urge to mock something in a test for `src/`, treat it as a signal: move that code to `scripts/` and test the `src/` boundary directly.
+## Conventions
 
-## The Validation Suite
-
-| File | Role |
-| --- | --- |
-| `test_optimizer.py` | Pure math: `quadratic_function`, `gradient_descent`, `make_quadratic_problem`, `simulate_trajectory`, and finite-state termination |
-| `test_experiment_config.py` | `load_experiment_config()` and `ExperimentConfig` defaults |
-| `test_analysis_integration.py` | Convergence runs, stability/benchmark reports, publishing, validation, `main()` smoke |
-| `test_analysis_coverage.py` | Analysis orchestration branches: validation errors/issues, `main()` paths, citations, publishing, register_figure |
-| `test_figures_orchestration.py` | Matplotlib figure generators |
-| `test_scripts_smoke.py` | Auxiliary script smoke (`generate_api_docs.py`, `00_preflight.py`) |
-| `test_documentation.py` | `documentation.py` API reference helpers |
-| `test_dashboard_config.py` | Dashboard `_parse_args` validation, payload divergent α-sweep, config parity with YAML |
-| `test_invariants.py` | `src/invariants.py` builders and schema |
-| `test_invariants_and_dashboard.py` | `scripts/build_dashboard.py` end-to-end |
-| `test_manuscript_variables.py` | `{{TOKEN}}` map + live manuscript cross-reference |
-
-Configuration: `projects/working/bond/live_and_let_die/pyproject.toml` (`fail_under = 90`, matching the root pipeline gate)
-
-Conftest: `projects/working/bond/live_and_let_die/tests/conftest.py` (sets `MPLBACKEND=Agg`, adds `src/` to `sys.path`)
-
-Live test count and coverage percentage: [`docs/_generated/COUNTS.md`](../../../../docs/_generated/COUNTS.md) (or `uv run pytest tests/ --collect-only -q` from the project directory).
-
-## Test Class Inventory (core math — `test_optimizer.py`)
-
-| Class | Covers |
-| --- | --- |
-| `TestQuadraticFunction` | `quadratic_function()` evaluation, dimension mismatch errors |
-| `TestQuadraticOptimum` | `quadratic_optimum()` closed-form minimizer $x^\ast$ and $f(x^\ast)$ |
-| `TestComputeGradient` | `compute_gradient()` accuracy at 1D and nD |
-| `TestGradientDescent` | Convergence, iteration cap, multidimensional cases, divergent step size |
-| `TestOptimizationResult` | Dataclass construction; `objective_history` |
-| `TestPerformanceBenchmarks` | Real timing across dimensions |
-| `TestMakeQuadraticProblem` | Factory callables usable with `gradient_descent` |
-| `TestSimulateTrajectory` | Trajectory structure and monotonic improvement |
-
-## Integration inventory (`test_analysis_integration.py`)
-
-| Class / area | Covers |
-| --- | --- |
-| `TestRunConvergenceExperiment` | All configured step sizes; `on_step` callback |
-| `TestScientificAnalysis` | Stability and benchmark report writers (tmp project root) |
-| `TestStabilityAnalysis` | Full stability run + visualization PNG (skipped if figures unavailable) |
-| `TestPerformanceBenchmarking` | Full benchmark run + visualization PNG |
-| `TestPublishingHelpers` | Citation metadata and save paths |
-| `TestValidationAndRegistration` | Output validation and figure registry |
-| `TestMainPipelineSmoke` | `analysis.main()` writes core artifacts |
-
-## Coverage Mechanics
-
-`pyproject.toml` settings relevant to coverage:
-
-```toml
-[tool.coverage.run]
-source = ["src"]
-branch = true
-omit = ["tests/*", "*/__init__.py", "*/test_*.py"]
-
-[tool.coverage.report]
-fail_under = 90
-```
-
-Authoritative gate (measures all of `src/`, including orchestration modules):
-
-```bash
-cd projects/working/bond/live_and_let_die
-uv run pytest tests/ --cov=src --cov-report=term-missing --cov-fail-under=90
-```
-
-## Zero-Mock Checklist
-
-Before submitting any test, verify all boxes are checked:
-
-- [ ] Test uses real `numpy` arrays as inputs
-- [ ] Test calls `src/` functions directly with real data
-- [ ] Test asserts mathematical properties (convergence, gradient accuracy, dimension shapes), not call counts
-- [ ] No `unittest.mock`, `MagicMock`, `create_autospec`, `@patch`, or mock factories
-- [ ] Infrastructure-dependent tests use `@pytest.mark.skipif` — real infrastructure or graceful skip, never a fake
-- [ ] Timing assertions use bounds (`< 5.0`) not exact values
-
-## Infrastructure-Dependent Test Pattern
-
-`TestStabilityAnalysis` and `TestPerformanceBenchmarking` in `test_analysis_integration.py` call `src/analysis/` and `src/figures/` directly. When figure modules import cleanly, tests run real stability/benchmark paths and validate PNG output. When imports fail, tests skip cleanly — this is not a mock.
-
-## Coverage inventory (`test_analysis_coverage.py`)
-
-Branch and error-path tests for `src/analysis/`: `TestFallbackLogging`, `TestValidateOutputs`, `TestSaveValidationReport`, `TestStabilityScoreBranches`, `TestScientificInfraPaths`, `TestExtractMetadataExtended`, `TestCitationsExtended`, `TestPublishingExtended`, `TestMainBranches`, `TestMainErrors`, `TestRegisterFigure`, `TestImportFallback`.
-
-## Orchestration Branch Testing
-
-Orchestration modules (`analysis/`, `dashboard.py`, `figures/`, `manuscript_variables.py`) may use **`pytest.MonkeyPatch`** on module attributes and **subprocess import isolation** to hit error paths and infrastructure fallbacks. That is not the same as mocking algorithm output: real code runs with redirected boundaries. See [`../tests/PATTERNS.md`](../tests/PATTERNS.md) and [`test_analysis_coverage.py`](../tests/test_analysis_coverage.py).
-
-## Structural Rule: If You Need a Mock, Move the Code
-
-- **`src/optimizer.py`, `src/invariants.py`, `src/experiment_config.py`** — Pure or config-only; no infrastructure imports
-- **`src/analysis/`, `src/figures/`, `src/dashboard.py`, `src/manuscript_variables.py`** — Orchestration; may import `infrastructure.*` behind try/except
-- **`scripts/*.py`** — CLI wrappers only
-
-## Running the Gate
-
-A green exit code is **not** proof the suite ran. Confirm **N collected > 0 AND coverage ≥ 90%**.
-
-```bash
-cd projects/working/bond/live_and_let_die
-uv run pytest tests/ --cov=src --cov-fail-under=90 -q
-```
-
-See [`troubleshooting.md`](troubleshooting.md#tests-report-passed-but-ran-0-tests--00-coverage).
+- `conftest.py` forces `MPLBACKEND=Agg` (headless) and puts the package root
+  and `src/` on `sys.path`.
+- Deterministic branch coverage: error branches (invalid node/edge, out-of-bounds
+  cell, unreachable goal, unknown source) are exercised explicitly.
+- `output/` is git-ignored; script smoke tests write regenerable artifacts that
+  do not dirty the tree.

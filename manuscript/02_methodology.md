@@ -1,83 +1,45 @@
-# Methodology {#sec:methodology}
+# Methodology
 
-This section describes the implementation methodology, explicitly detailing how the optimization algorithms are constructed, validated, and analyzed using the Generalized Research Template's `infrastructure` and `tests` ecosystems.
+## Supply-graph analytics
 
-## Algorithm Implementation
+The San Monique operation is represented as a directed, weighted,
+capacity-constrained graph `G = (V, E)`. Vertices are classified as
+`production` (interior poppy fields, field processing works), `transit`
+(airfield, harbor, smuggler's cove), or `market` (Miami, New York). Each edge
+carries a unit cost (money, risk, time) and a throughput capacity (units per
+reporting period).
 
-### Gradient Descent Algorithm
+- **Cheapest route.** Dijkstra's algorithm returns the minimal total cost and
+  ordered node sequence from a production source to each market. Deterministic
+  tie-breaking uses `(cost, node_id)` heap keys.
+- **Maximum throughput.** Edmonds-Karp (BFS augmenting path) computes the
+  maximum flow that can be pushed from a virtual super-source
+  ({{LALD_SUPPLY_SOURCE}}) through the network to a virtual super-sink
+  ({{LALD_SUPPLY_SINK}}). Production nodes are bounded by their crop capacity
+  and markets by their demand ceilings.
+- **Bottleneck.** The minimum cut (the set of forward edges leaving the
+  residual-reachable set after max-flow) bounds throughput. A per-transit-node
+  disruption probe re-computes flow after neutralizing each transit asset and
+  reports the one whose loss costs the most — the highest-value interdiction
+  target.
 
-The core algorithm implements the iterative procedure for unconstrained optimization. The [`optimizer` module](https://github.com/docxology/template/blob/main/projects/working/bond/live_and_let_die/src/optimizer.py) uses the standard-library `logging` logger for optional verbose diagnostics; the [analysis orchestrator](https://github.com/docxology/template/blob/main/projects/working/bond/live_and_let_die/scripts/optimization_analysis.py) uses `infrastructure.core.logging.utils.get_logger`. Tests run under the hermetic boundaries defined in the [test configuration](https://github.com/docxology/template/blob/main/projects/working/bond/live_and_let_die/tests/conftest.py).
+## Coded-communiqué deciphering
 
-**Algorithm — Gradient Descent (implemented in the [optimizer module](https://github.com/docxology/template/blob/main/projects/working/bond/live_and_let_die/src/optimizer.py#L87-L173))**
+The voodoo "symbol substitution" is a monoalphabetic keyword cipher over the
+26-letter alphabet: a keyword (here {{LALD_KEYWORD}}) seeds a reshuffled cipher
+alphabet (duplicates dropped, remaining letters appended), and each plaintext
+letter maps to the cipher symbol at its index. Enciphering and deciphering are
+pure dictionary lookups. To handle an *unkeyed* intercept, `solve_substitution`
+performs a frequency attack: ciphertext symbols are ranked by observed
+frequency and matched to reference English letters ranked by expected
+frequency; the candidate plaintext is scored by the cosine similarity of its
+frequency profile against the reference distribution.
 
-> **Input:** Initial point $x_0$, step size $\alpha$, tolerance $\epsilon$, max iterations $N_{\max}$
->
-> 1. Initialize $k \leftarrow 0$
-> 2. **While** $k < N_{\max}$ **do:**
->    - Compute gradient $g_k = \nabla f(x_k)$
->    - **If** $\|g_k\|_2 < \epsilon$ **then return** $x_k$ *(converged)*
->    - Update: $x_{k+1} \leftarrow x_k - \alpha \cdot g_k$
->    - $k \leftarrow k + 1$
-> 3. **Return** $x_k$ *(max iterations reached)*
+## Island ops planning
 
-## Infrastructure Integration
-
-The methodology explicitly bridges theoretical mathematics with production-grade validation through the `infrastructure.scientific` module.
-
-### Numerical Stability Analysis
-
-Rather than writing ad-hoc validation code, the project imports `infrastructure.scientific.stability.check_numerical_stability`. This utility subjects the objective function to a barrage of extreme inputs (NaN, Inf, $\pm 10^{10}$) to calculate a formalized stability score. If this score degrades, the [analysis orchestrator](https://github.com/docxology/template/blob/main/scripts/pipeline/stage_02_analysis.py) execution deliberately aborts, ensuring the methodology cannot enter unrecoverable states.
-
-### Performance Benchmarking
-
-The analysis exercises [`infrastructure.scientific.benchmarking.benchmark_function`](https://github.com/docxology/template/blob/main/infrastructure/scientific/benchmarking.py) as a runtime diagnostic. Host-dependent timing and memory observations are logged but excluded from tracked evidence. The canonical report records fixed inputs and exact objective values, while the dimensional figure reports deterministic convergence iterations and the proxy $d \times \text{iterations}$; neither surface claims that one host run proves an asymptotic bound.
-
-## Convergence Analysis
-
-For quadratic functions $f(x) = \frac{1}{2}x^T A x - b^T x$ where $A$ is positive definite, the convergence factor becomes [@bertsekas1999nonlinear]:
-
-\begin{equation}
-\label{eq:convergence_factor}
-\rho = \frac{|\lambda_{\max} - \alpha\lambda_{\min}|}{|\lambda_{\min} + \alpha\lambda_{\max}|}
-\end{equation}
-
-Optimal convergence occurs when $\alpha = \frac{2}{\lambda_{\min} + \lambda_{\max}}$, yielding $\rho = \frac{\kappa - 1}{\kappa + 1}$.
-
-## Experimental Setup
-
-### Step Size Analysis
-
-Step sizes are not chosen ad hoc in the manuscript: they are read from `experiment.step_sizes` in `manuscript/config.yaml` and passed through `run_convergence_experiment()` in `src/analysis/` (entry: `scripts/optimization_analysis.py`). The active grid for this build is:
-
-{{CONFIG_STEP_SIZES_BULLETS}}
-
-Labels follow the same agency taxonomy used for plot colours (`_agency_category` in the analysis script): **conservative** (small $\alpha$, slow but stable on $H=I$), **near-optimal** (including $\alpha=1$ where the method reaches $x^\ast$ in one step for this quadratic), **aggressive** ($1 < \alpha < 2$, still linearly contracting in $|x-x^\ast|$ but oscillatory in sign), and **divergent** ($|1-\alpha| \geq 1$).
-
-### Zero-Mock Testing Methodology
-
-The most critical aspect of the project's methodology is its validation framework. The project is governed by a strict Zero-Mock testing policy, evaluated actively by executing `uv run pytest projects/working/bond/live_and_let_die/tests/` during the infrastructure build phase.
-
-1. **Project tests**: [`projects/working/bond/live_and_let_die/tests/test_optimizer.py`](../tests/test_optimizer.py) exercises `src/optimizer.py` (typical, edge, boundary, and pathological inputs including NaN/Inf and zero gradients) and, when infrastructure imports succeed, call into `optimization_analysis.py` helpers—without mocks. Suite size: [`docs/_generated/COUNTS.md`](../../../../docs/_generated/COUNTS.md).
-2. **Infrastructure validation**: The repository-level `tests/infra_tests/` suite validates shared template modules (e.g. pipeline and discovery helpers) independently of this project’s manuscript.
-3. **Coverage Gates**: The [GitHub Actions CI workflow](https://github.com/docxology/template/blob/main/.github/workflows/ci.yml) enforces a mandatory ≥90% statement coverage gate on `projects/working/bond/live_and_let_die/src/` prior to treating the project as build-green.
-
-### Stopping rule and reporting
-
-`gradient_descent()` terminates when $\|\nabla f(x_k)\|$ falls below `experiment.tolerance`, when $k$ reaches `experiment.max_iterations`, or when an objective, gradient, or update becomes non-finite. The boolean `converged` plus `termination_reason` in exported CSV rows distinguish these outcomes. A non-finite candidate is rejected before it enters `objective_history`, preserving the last finite state for reproducible reporting. Downstream, `scripts/z_generate_manuscript_variables.py` aggregates the CSV into `RESULT_*` placeholders so tables and prose cannot drift from the last analysis run.
-
-### Figure generation contract
-
-Each figure in `03_results.md` maps to a generator in `src/figures/` (`generate_convergence_plot`, `generate_step_size_sensitivity_plot`, `generate_convergence_rate_plot`, `generate_complexity_visualization`, `generate_stability_visualization`, `generate_benchmark_visualization`), orchestrated by `src/analysis/` / `scripts/optimization_analysis.py`. Captions in the markdown intentionally name the function and the key parameters (tolerance lines, grids, dimensions) so reviewers can navigate from PDF to code without inferring hidden defaults.
-
-The same generator writes explicit `metadata.alt_text` for every registered
-figure. The alt text states what the visual encodes and preserves the boundary
-between deterministic observations and host-dependent diagnostics. Run the
-opt-in publication migration gate with
-`--require-figure-accessibility` to verify that every referenced figure has
-this metadata before promotion.
-
-## Analysis Pipeline & LaTeX Integration
-
-The automated analysis script leverages [`infrastructure.core.progress`](https://github.com/docxology/template/blob/main/infrastructure/core/progress.py) (`ProgressBar`, `SubStageProgress`) to orchestrate experiments, collect convergence trajectories, and generate publication-quality visualizations seamlessly.
-
-The research template supports advanced LaTeX customization through the `preamble.md` configuration. This is ingested directly by `infrastructure.rendering.latex_utils.py` and `pdf_renderer.py`, automatically linking compiled PGF plots and BibTeX citations. This automated approach ensures an unbreakable chain of custody from raw algorithmic execution to the final rendered manuscript.
+San Monique is discretized as a terrain grid where each cell is a terrain type
+with a movement cost (road/open/beach cost 1, mangrove 3, open water 3, swamp 5,
+crocodile water 7, impassable cliff infinite). Dijkstra over the four cardinal
+neighbours finds the lowest-cost route between the landing beach and the
+airfield zone; the planner reports total cost, the path, and the number of
+crocodile-water cells traversed as a hazard metric.
