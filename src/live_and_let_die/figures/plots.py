@@ -24,6 +24,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.lines import Line2D
 
+from live_and_let_die.interdiction import (
+    canonical_flow_graph,
+    exact_interdiction,
+    greedy_interdiction,
+)
 from live_and_let_die.island_ops import (
     ROUTE_GOAL,
     ROUTE_START,
@@ -34,11 +39,17 @@ from live_and_let_die.island_ops import (
 )
 from live_and_let_die.supply_graph import (
     SAN_MONIQUE_GRAPH,
+    SUPER_SINK,
+    SUPER_SOURCE,
     Node,
     analyze_san_monique,
 )
 
-__all__ = ["render_island_route", "render_supply_graph"]
+__all__ = [
+    "render_interdiction_curve",
+    "render_island_route",
+    "render_supply_graph",
+]
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[3]
 DEFAULT_FIGURE_DIR = PACKAGE_ROOT / "output" / "figures"
@@ -129,6 +140,38 @@ def _render_grid_rgb(grid: TerrainGrid) -> np.ndarray:
         for c in range(grid.ncols):
             rgb[r, c, :] = _TERRAIN_RGB[grid.cell(r, c)]
     return rgb
+
+
+def render_interdiction_curve(out_path: str | Path | None = None) -> Path:
+    """Render (and return) the interdiction trade-off curve (reduction vs budget).
+
+    Plots greedy and exact throughput reduction for budgets 0..4 against the
+    canonical San Monique network, showing the diminishing marginal value of
+    additional interdicted legs.
+    """
+    target = Path(out_path) if out_path is not None else DEFAULT_FIGURE_DIR / "interdiction_curve.png"
+    _ensure_dir(target)
+
+    flow_graph = canonical_flow_graph()
+    severable = tuple(edge.as_tuple() for edge in SAN_MONIQUE_GRAPH.edges())
+    budgets = list(range(0, 5))
+    greedy_pts = [greedy_interdiction(flow_graph, SUPER_SOURCE, SUPER_SINK, b, severable).reduction for b in budgets]
+    exact_pts = [exact_interdiction(flow_graph, SUPER_SOURCE, SUPER_SINK, b, severable).reduction for b in budgets]
+
+    fig, ax = plt.subplots(figsize=(6, 4))
+    xs = np.array(budgets, dtype=float)
+    ax.plot(xs, np.asarray(greedy_pts, dtype=float), marker="o", color="#1A5276", label="greedy")
+    ax.plot(xs, np.asarray(exact_pts, dtype=float), marker="s", ls="--", color="#C0392B", label="optimal (exhaustive)")
+    ax.set_xlabel("interdiction budget (legs severed)")
+    ax.set_ylabel("throughput reduction (units)")
+    ax.set_title("San Monique interdiction trade-off\n(greedy vs optimal strike plans)")
+    ax.set_xticks(budgets)
+    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=8)
+    fig.tight_layout()
+    fig.savefig(target, dpi=150)
+    plt.close(fig)
+    return target
 
 
 def render_island_route(out_path: str | Path | None = None) -> Path:

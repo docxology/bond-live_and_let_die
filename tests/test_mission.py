@@ -74,7 +74,7 @@ def test_run_mission_flow_order() -> None:
     provider = MissionProvider()
     debrief = run_mission(provider, ReconRequest("full flow"))
     assert debrief.outcome.success
-    assert len(debrief.lessons) == 3
+    assert len(debrief.lessons) == 5
 
 
 def test_debrief_lessons() -> None:
@@ -89,7 +89,7 @@ def test_run_analysis_deterministic_and_rich() -> None:
     first = run_analysis()
     second = run_analysis()
     assert first == second
-    assert set(first) >= {"supply", "comms", "ops", "input_hash"}
+    assert set(first) >= {"supply", "comms", "ops", "interdiction", "drums", "market", "input_hash"}
     assert first["comms"]["plaintext"] == "KANANGA LETS THE SNAKE BITE"
     assert first["ops"]["crocodile_cells"] == 4
     assert first["ops"]["route_cost"] == 41.0

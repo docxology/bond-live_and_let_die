@@ -1,6 +1,7 @@
 # AGENTS.md — src
 
-- **Pure core** (`supply_graph.py`, `coded_comms.py`, `island_ops.py`): no
+- **Pure core** (`supply_graph.py`, `coded_comms.py`, `island_ops.py`,
+  `interdiction.py`, `voodoo_drums.py`, `market_flow.py`): no
   `infrastructure.*`, no `bond_api` imports — importable standalone.
 - **Adapter** (`mission.py`): implements the FROZEN `bond_api.MissionProvider`;
   register gadgets on `bond_api.GadgetRegistry`; deterministic provenance

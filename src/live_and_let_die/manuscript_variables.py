@@ -75,10 +75,19 @@ def generate_variables(
     supply = analysis["supply"]
     comms = analysis["comms"]
     ops = analysis["ops"]
+    interdict = analysis["interdiction"]
+    drums = analysis["drums"]
+    market = analysis["market"]
     if require_outputs and not supply:
         raise ValueError("supply analysis produced no output — cannot hydrate manuscript")
 
     stamp = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat(timespec="seconds")
+    greedy = interdict["greedy"]
+    exact = interdict["exact"]
+    top_target = interdict["efficiency_ranking"][0]
+    ranking_leg = top_target["leg"]
+    ranking_drop = top_target["reduction"]
+    markets = sorted(market["markets"])
     return {
         "LALD_IDENTITY": str(paper.get("identity", FILM)),
         "LALD_CODENAME": str(paper.get("codename", CODENAME)),
@@ -101,9 +110,39 @@ def generate_variables(
         "LALD_DISRUPTION": f"{supply['disruption_units']:.0f}",
         "LALD_SUPPLY_SOURCE": SUPER_SOURCE,
         "LALD_SUPPLY_SINK": SUPER_SINK,
+        # Interdiction
+        "LALD_BUDGET": str(interdict["budget"]),
+        "LALD_BASE_FLOW": f"{interdict['base_flow']:.0f}",
+        "LALD_GREEDY_SEVERED": ", ".join(f"{s}→{d}" for s, d in greedy["severed"]),
+        "LALD_GREEDY_REDUCTION": f"{greedy['reduction']:.0f}",
+        "LALD_GREEDY_CE": f"{greedy['cost_effectiveness']:.0f}",
+        "LALD_REMAINING_FLOW": f"{greedy['remaining_flow']:.0f}",
+        "LALD_EXACT_SEVERED": ", ".join(f"{s}→{d}" for s, d in exact["severed"]),
+        "LALD_EXACT_REDUCTION": f"{exact['reduction']:.0f}",
+        "LALD_EFFICIENCY_TOP_LEG": f"{ranking_leg[0]}→{ranking_leg[1]}",
+        "LALD_EFFICIENCY_TOP_DROP": f"{ranking_drop:.0f}",
+        # Drum / comms
         "LALD_KEYWORD": comms["keyword"],
         "LALD_PLAINTEXT": comms["plaintext"],
         "LALD_CIPHERTEXT": comms["ciphertext"],
+        "LALD_DRUM_MESSAGE": drums["plaintext"],
+        "LALD_DRUM_DECODED": drums["decoded"],
+        "LALD_DRUM_ROUNDTRIP": "exact" if drums["roundtrip_exact"] else "inexact",
+        "LALD_DRUM_BEATS": str(drums["beats"]),
+        "LALD_DRUM_DENSITY": f"{drums['density']:.3f}",
+        "LALD_DRUM_LONGEST": str(drums["longest_run"]),
+        # Market economics
+        "LALD_FARM_GATE_PRICE": f"{market['farm_gate_price']:.0f}",
+        "LALD_MIAMI_STREET_PRICE": f"{market['markets']['miami']['street_price']:.0f}",
+        "LALD_MIAMI_STREET_PURITY": f"{market['markets']['miami']['street_purity'] * 100:.0f}%",
+        "LALD_NYC_STREET_PRICE": f"{market['markets']['new_york']['street_price']:.0f}",
+        "LALD_NYC_STREET_PURITY": f"{market['markets']['new_york']['street_purity'] * 100:.0f}%",
+        "LALD_AVG_STREET_PRICE": f"{market['avg_street_price']:.0f}",
+        "LALD_PRODUCER_SHARE": f"{market['producer_share'] * 100:.1f}%",
+        "LALD_SPREAD_RATIO": f"{market['spread_ratio']:.0f}",
+        "LALD_TOTAL_REVENUE": f"{market['total_revenue']:.0f}",
+        "LALD_MARKET_COUNT": str(len(markets)),
+        # Ops
         "LALD_ROUTE_COST": f"{ops['route_cost']:.0f}",
         "LALD_CROCODILE_CELLS": str(ops["crocodile_cells"]),
         "LALD_ROUTE_MOVES": str(ops["movement_cells"]),

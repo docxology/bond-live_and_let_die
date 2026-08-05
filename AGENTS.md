@@ -1,39 +1,36 @@
 # AGENTS.md — LIVE AND LET DIE / SAN MONIQUE
 
 This is a PROJECT BOND film package (codename **SAN MONIQUE**) implementing the
-FROZEN BOND-API mission protocol over a pure, deterministic domain core.
+FROZEN BOND-API mission protocol over a pure, deterministic domain core. It has
+been deepened across phases; the protocol surface is stable.
 
 ## Layer contract
 
-- `src/live_and_let_die/supply_graph.py`, `coded_comms.py`, `island_ops.py` are
-  **pure**: no `infrastructure.*` and no `bond_api` imports — importable in
-  isolation (stdlib + numpy only in practice).
-- `src/live_and_let_die/mission.py` is the **thin protocol adapter**: it imports
-  `bond_api.protocol` / `bond_api.registry` and the pure core, and implements
-  the `MissionProvider` contract.
-- `src/live_and_let_die/manuscript_variables.py` hydrates manuscript tokens from
+- Pure core (`supply_graph.py`, `coded_comms.py`, `island_ops.py`,
+  `interdiction.py`, `voodoo_drums.py`, `market_flow.py`): no
+  `infrastructure.*` and no `bond_api` imports — importable in isolation.
+- `mission.py` is the **thin protocol adapter**: it imports `bond_api.protocol` /
+  `bond_api.registry` and the pure core, and implements `MissionProvider`.
+- `manuscript_variables.py` hydrates manuscript tokens from
   `manuscript/config.yaml` + the pure core.
+- `figures/plots.py` renders deterministic figures.
 - `scripts/` are thin orchestrators only.
 
-## Protocol integration
+## Protocol stability
 
-Add the local path dependency so bond-api is importable (already done):
-
-```yaml
-[tool.uv.sources]
-bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
-```
-
-`src/live_and_let_die/mission.py` exposes `MissionProvider` at module top level
-(film `live_and_let_die`, codename `SAN MONIQUE`) and registers gadgets
-(`supply_graph_analyzer`, `communique_decipher`, `island_route_planner`) with
-the `bond_api.GadgetRegistry`. The orchestrator discovers it by slug on
-`sys.path`.
+`src/live_and_let_die/mission.py` exposes `MissionProvider` (film
+`live_and_let_die`, codename `SAN MONIQUE`) at module top level with
+`brief`/`recon`/`plan`/`execute`/`debrief` plus the `GADGET_REGISTRY` and
+`register_gadgets(registry=None)` hook. **Do not change this public shape** —
+bond-cli, the coordinator reconcile, and the orchestrator consume it across
+packages. Deepen inside the package (new modules, richer `execute` internals),
+never by breaking discovery.
 
 ## Behavior notes
 
 - Deterministic: fixed provenance seed 8, zero wall-clock in artifacts, canonical
-  SHA-256 input hash. No random draws anywhere.
+  SHA-256 input hash (now covering graph, ciphers, drum message, and per-leg
+  economics). No random draws anywhere.
 - No mock framework: tests use real data + computation only.
 - Do not change the FROZEN bond-api protocol types — code against them.
 

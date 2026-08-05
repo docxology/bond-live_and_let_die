@@ -3,11 +3,13 @@
 This is the film's thin protocol adapter. It implements the frozen
 :class:`bond_api.protocol.MissionProvider` contract (brief / recon / plan /
 execute / debrief) and binds the pure domain core — narcotics supply-graph
-analytics, voodoo-coded communiqué deciphering, and Caribbean island ops
-planning — to the BOND-API mission lifecycle.
+analytics and interdiction, voodoo-coded communiqué and drum-code deciphering,
+market-flow economics, and Caribbean island ops planning — to the BOND-API
+mission lifecycle.
 
 The heavy lifting lives in the domain modules (:mod:`~.supply_graph`,
-:mod:`~.coded_comms`, :mod:`~.island_ops`); this module only orchestrates them
+:mod:`~.coded_comms`, :mod:`~.island_ops`, :mod:`~.interdiction`,
+:mod:`~.voodoo_drums`, :mod:`~.market_flow`); this module only orchestrates them
 and packages results with provenance, so it stays thin and deterministic. The
 pure core remains importable without ``bond_api``.
 
@@ -42,16 +44,19 @@ from live_and_let_die.coded_comms import (
     decipher,
     encipher,
 )
+from live_and_let_die.interdiction import interdict_san_monique
 from live_and_let_die.island_ops import (
     ROUTE_GOAL,
     ROUTE_START,
     SAN_MONIQUE_TERRAIN,
     plan_san_monique_route,
 )
+from live_and_let_die.market_flow import EDGE_ECONOMICS, market_flow_report
 from live_and_let_die.supply_graph import (
     SAN_MONIQUE_GRAPH,
     analyze_san_monique,
 )
+from live_and_let_die.voodoo_drums import DRUM_MESSAGE, drum_report
 
 __all__ = [
     "CODENAME",
@@ -86,7 +91,9 @@ def _canonical_inputs() -> str:
     comms = f"{KEYWORD}|{SAN_MONIQUE_PLAINTEXT}"
     terrain = "|".join(SAN_MONIQUE_TERRAIN)
     ops = f"{ROUTE_START[0]},{ROUTE_START[1]}:{ROUTE_GOAL[0]},{ROUTE_GOAL[1]}"
-    return "||".join([";".join(supply), comms, terrain, ops])
+    economics = sorted(f"{src}->{dst}:{m}:{d}" for (src, dst), (m, d) in EDGE_ECONOMICS.items())
+    drums = DRUM_MESSAGE
+    return "||".join([";".join(supply), comms, terrain, ops, ";".join(economics), drums])
 
 
 def input_digest() -> str:
@@ -130,6 +137,9 @@ def run_analysis() -> dict[str, Any]:
         "supply": supply,
         "comms": comms,
         "ops": ops,
+        "interdiction": interdict_san_monique(budget=3),
+        "drums": drum_report(),
+        "market": market_flow_report(),
         "input_hash": input_digest(),
     }
 
@@ -151,6 +161,9 @@ def register_gadgets(registry: GadgetRegistry | None = None) -> GadgetRegistry:
             "supply_graph_analyzer": analyze_san_monique,
             "communique_decipher": decipher_field_communique,
             "island_route_planner": plan_san_monique_route,
+            "interdiction_planner": interdict_san_monique,
+            "drum_traffic_reporter": drum_report,
+            "market_flow_reporter": market_flow_report,
         },
     )
     return target
@@ -248,11 +261,18 @@ class MissionProvider:  # noqa: N801 — name fixed by the discovery contract
         """Distil actionable lessons from the executed outcome."""
         supply = outcome.results["supply"]
         ops = outcome.results["ops"]
+        interdict = outcome.results["interdiction"]
+        market = outcome.results["market"]
         return Debrief(
             outcome=outcome,
             lessons=(
                 f"interdict the {supply['critical_transit_node']} — neutralizing it "
                 f"stops {supply['disruption_units']:.0f} units of Miami throughput",
+                f"a {interdict['budget']}-leg strike plan achieves an optimal "
+                f"{interdict['exact']['reduction']:.0f}-unit reduction (greedy "
+                f"{interdict['greedy']['reduction']:.0f}) — collapse the operation",
+                f"the farm-gate producer keeps only {market['producer_share'] * 100:.1f}% "
+                "of street value — the whole chain must be disrupted, not the field",
                 f"any overland approach to the airfield wades at least {ops['crocodile_cells']} crocodile-water cells",
                 "the communiqué deciphers under the voodoo keyword substitution",
             ),

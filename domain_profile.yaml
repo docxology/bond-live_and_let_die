@@ -16,6 +16,9 @@ domain_modules:
   - "supply_graph"
   - "coded_comms"
   - "island_ops"
+  - "interdiction"
+  - "voodoo_drums"
+  - "market_flow"
 
 protocol: "bond_api.MissionProvider"
 provenance_seed: 8
@@ -29,5 +32,6 @@ expected_artifacts:
   - "output/data/mission_outcome.json"
   - "output/data/manuscript_variables.json"
   - "output/figures/supply_graph.png"
+  - "output/figures/interdiction_curve.png"
   - "output/figures/island_route.png"
   - "output/manuscript/*.md"

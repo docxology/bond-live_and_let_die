@@ -23,17 +23,50 @@ reporting period).
   reports the one whose loss costs the most — the highest-value interdiction
   target.
 
-## Coded-communiqué deciphering
+## Budgeted network interdiction
+
+Beyond a single bottleneck, the operation asks *how much of the network can be
+taken down with a limited strike budget*. This is the deterministic network
+interdiction problem: with a budget `B` of transit legs that can be severed in
+one coordinated operation, choose the legs that cost the enemy the most
+throughput. Two solvers are provided:
+
+- **Greedy** — myopically sever the leg with the largest marginal throughput
+  drop, then repeat; deterministic tie-breaking on leg order.
+- **Exact** — exhaustive enumeration of all `B`-subsets of severable legs
+  (feasible at this scale) that maximises reduction; it is the correctness
+  reference for the greedy heuristic.
+- **Efficiency ranking** — each leg's *independent* throughput impact, ranked,
+  forming the target list.
+
+## Coded communiqués: symbol substitution and drum code
 
 The voodoo "symbol substitution" is a monoalphabetic keyword cipher over the
 26-letter alphabet: a keyword (here {{LALD_KEYWORD}}) seeds a reshuffled cipher
 alphabet (duplicates dropped, remaining letters appended), and each plaintext
-letter maps to the cipher symbol at its index. Enciphering and deciphering are
-pure dictionary lookups. To handle an *unkeyed* intercept, `solve_substitution`
-performs a frequency attack: ciphertext symbols are ranked by observed
-frequency and matched to reference English letters ranked by expected
-frequency; the candidate plaintext is scored by the cosine similarity of its
-frequency profile against the reference distribution.
+letter maps to the cipher symbol at its index. To handle an *unkeyed* intercept,
+`solve_substitution` performs a frequency attack: ciphertext symbols are ranked
+by observed frequency and matched to reference English letters ranked by
+expected frequency; the candidate plaintext is scored by cosine similarity of
+its frequency profile against the reference distribution.
+
+Alongside the written cipher, the cult's **drum code** is a Morse-style rhythm
+codec over a per-beat `0/1` grid: dot = 1 sounding beat, dash = 3, intra-letter
+gap 1, inter-letter gap 3, inter-word gap 7. `signal_for_text` encodes any
+message onto the beat grid and `decode_signal` recovers it exactly under strict
+run-length validation. `rhythm_signature` / `signature_distance` give a numeric
+traffic signature so two intercepted signals can be compared.
+
+## Market-flow economics
+
+The money side: the same legs that carry volume also mark prices up and dilute
+purity from the farm gate ({{LALD_FARM_GATE_PRICE}} $/kg) to the street
+({{LALD_MARKET_COUNT}} markets). Price and purity propagate along the cheapest
+path (by arbitrage the lowest-cost channel sets the price), and the street stage
+applies a retail markup and a purity dilution. The headline metric is the
+**producer share** — the farm-gate value as a fraction of street price — and the
+**price-spread ratio**, both driven by the per-leg economics dataset
+`EDGE_ECONOMICS`.
 
 ## Island ops planning
 

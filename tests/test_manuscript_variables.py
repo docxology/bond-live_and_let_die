@@ -45,6 +45,14 @@ def test_generate_variables_hydrates_metrics() -> None:
     assert variables["LALD_PLAINTEXT"] == "KANANGA LETS THE SNAKE BITE"
     assert variables["LALD_KEYWORD"] == "BARON"
     assert variables["LALD_SUPPLY_NODES"] == "7"
+    # Deepened Phase-4 metrics.
+    assert variables["LALD_BUDGET"] == "3"
+    assert variables["LALD_GREEDY_REDUCTION"] == "220"
+    assert variables["LALD_EXACT_REDUCTION"] == "220"
+    assert variables["LALD_DRUM_BEATS"] == "195"
+    assert variables["LALD_DRUM_ROUNDTRIP"] == "exact"
+    assert variables["LALD_PRODUCER_SHARE"] == "1.7%"
+    assert variables["LALD_SPREAD_RATIO"] == "59"
 
 
 def test_generate_variables_requires_paper_section(tmp_path: Path) -> None:

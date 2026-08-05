@@ -9,6 +9,12 @@ Pure domain core for special-agent mission software on Kananga's San Monique:
   keyword (symbol-substitution) ciphers and frequency-attack solving.
 * :mod:`live_and_let_die.island_ops` — Caribbean island ops planning over a
   mangrove / crocodile terrain grid.
+* :mod:`live_and_let_die.interdiction` — budgeted narcotics network
+  interdiction: which transit legs to sever to cost the enemy the most.
+* :mod:`live_and_let_die.voodoo_drums` — voodoo drum-code signaling (Morse-style
+  rhythm codec) and traffic-signature analysis.
+* :mod:`live_and_let_die.market_flow` — farm-gate-to-street price and purity
+  economics (producer share, price spread, revenue).
 * :mod:`live_and_let_die.mission` — the BOND-API ``MissionProvider`` adapter
   (codename SAN MONIQUE) that layers the frozen protocol over the domain core.
 
@@ -31,6 +37,10 @@ from live_and_let_die.coded_comms import (
     score_plaintext,
     solve_substitution,
 )
+from live_and_let_die.interdiction import (
+    InterdictionPlan,
+    interdict_san_monique,
+)
 from live_and_let_die.island_ops import (
     ROUTE_GOAL,
     ROUTE_START,
@@ -39,12 +49,19 @@ from live_and_let_die.island_ops import (
     TerrainGrid,
     plan_san_monique_route,
 )
+from live_and_let_die.market_flow import market_flow_report
 from live_and_let_die.supply_graph import (
     SAN_MONIQUE_GRAPH,
     SUPER_SINK,
     SUPER_SOURCE,
     SupplyGraph,
     analyze_san_monique,
+)
+from live_and_let_die.voodoo_drums import (
+    DRUM_MESSAGE,
+    decode_signal,
+    drum_report,
+    signal_for_text,
 )
 
 __version__ = "0.1.0"
@@ -73,4 +90,11 @@ __all__ = [
     "ROUTE_GOAL",
     "TERRAIN_COSTS",
     "plan_san_monique_route",
+    "InterdictionPlan",
+    "interdict_san_monique",
+    "DRUM_MESSAGE",
+    "signal_for_text",
+    "decode_signal",
+    "drum_report",
+    "market_flow_report",
 ]

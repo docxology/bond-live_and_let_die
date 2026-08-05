@@ -31,3 +31,23 @@ claims:
     description: "Crocodile-water cells crossed by the infiltration route"
     value: 4
     source: "src/live_and_let_die/island_ops.py::plan_san_monique_route -> crocodile_cells"
+  - id: "interdict-reduction"
+    description: "Optimal 3-leg interdiction throughput reduction"
+    value: 220
+    source: "src/live_and_let_die/interdiction.py::interdict_san_monique -> exact.reduction"
+  - id: "interdict-top-target"
+    description: "Highest-value single target leg"
+    value: "field_works -> harbor"
+    source: "src/live_and_let_die/interdiction.py::interdict_san_monique -> efficiency_ranking[0]"
+  - id: "drum-beats"
+    description: "Beat length of the canonical voodoo drum message"
+    value: 195
+    source: "src/live_and_let_die/voodoo_drums.py::drum_report -> beats"
+  - id: "market-producer-share"
+    description: "Farm-gate producer share of street value"
+    value: 0.017
+    source: "src/live_and_let_die/market_flow.py::market_flow_report -> producer_share"
+  - id: "market-revenue"
+    description: "Gross per-market revenue (USD)"
+    value: 3888000
+    source: "src/live_and_let_die/market_flow.py::market_flow_report -> total_revenue"
