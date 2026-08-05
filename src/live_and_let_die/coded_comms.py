@@ -195,6 +195,16 @@ def solve_substitution(ciphertext: str, reference: Mapping[str, float] | None = 
     Symbols are ranked by observed frequency and matched to reference letters
     ranked by expected frequency (most frequent first). Returns a candidate
     plaintext and its :func:`score_plaintext` cosine similarity.
+
+    **This does not recover the plaintext of a short intercept.** On the
+    canonical 27-character communiqué it returns
+    ``"IEAEAHE LTON ORT NAEIT SDOT"`` — unreadable — while still scoring 0.926
+    against the English reference, because at this length the observed
+    frequency ranking is dominated by sampling noise and the score measures only
+    the profile the substitution was *built* to have. Treat the score as a
+    ranking heuristic over many candidates, never as evidence of recovery. Both
+    the exact output and the misleadingly high score are pinned in
+    ``tests/test_coded_comms.py`` so a regression in either is visible.
     """
     ref: Mapping[str, float] = reference if reference is not None else ENGLISH_FREQUENCIES
     counts = frequency_table(ciphertext)

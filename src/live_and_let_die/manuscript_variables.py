@@ -13,6 +13,7 @@ The consuming orchestrator is ``scripts/z_generate_manuscript_variables.py``
 
 from __future__ import annotations
 
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -42,6 +43,15 @@ __all__ = [
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = PACKAGE_ROOT / "manuscript" / "config.yaml"
+DEFAULT_MANUSCRIPT_OUTPUT_DIR = PACKAGE_ROOT / "output" / "manuscript"
+DEFAULT_FIGURE_DIR = PACKAGE_ROOT / "output" / "figures"
+
+#: Figure directory as seen *from the resolved manuscript*, derived from the two
+#: real paths rather than typed. Prose embeds figures as
+#: ``![caption]({{LALD_FIGURE_DIR}}/name.png)`` so the rendered section carries a
+#: path that actually resolves; ``tests/test_manuscript_variables.py`` opens
+#: every embedded path and fails if one is missing.
+FIGURE_DIR_RELATIVE = os.path.relpath(DEFAULT_FIGURE_DIR, DEFAULT_MANUSCRIPT_OUTPUT_DIR)
 
 _TOKEN_RE = re.compile(r"\{\{[A-Z0-9_]+\}\}")
 
@@ -152,6 +162,7 @@ def generate_variables(
         "LALD_SUBTITLE": str(paper.get("subtitle", "")),
         "LALD_NUM_OBJECTIVES": str(len(_mission_objectives(config))),
         "LALD_MISSION_PHASES": "brief, recon, plan, execute, debrief",
+        "LALD_FIGURE_DIR": FIGURE_DIR_RELATIVE,
         # Configuration constants: reported through tokens so a change to the
         # code moves the prose with it (no hand-authored constants either).
         "LALD_SEED": str(MISSION_SEED),
@@ -175,6 +186,9 @@ def generate_variables(
         "LALD_SHORTEST_NYC_PATH": _join_path(supply["shortest_path_new_york"][1]),
         "LALD_MAX_FLOW": f"{supply['max_flow_total']:.0f}",
         "LALD_MIN_CUT": f"{supply['min_cut_value']:.0f}",
+        "LALD_MIN_CUT_EDGES": ", ".join(f"{s}→{d}" for s, d in supply["min_cut_edges"]),
+        "LALD_MIN_CUT_PHYSICAL_COUNT": str(len(supply["min_cut_physical_edges"])),
+        "LALD_MIN_CUT_LIMIT": ("demand-limited" if supply["min_cut_is_demand_limited"] else "transit-limited"),
         "LALD_BOTTLENECK": supply["critical_transit_node"],
         "LALD_DISRUPTION": f"{supply['disruption_units']:.0f}",
         "LALD_SUPPLY_SOURCE": SUPER_SOURCE,
@@ -214,6 +228,7 @@ def generate_variables(
         # Ops
         "LALD_ROUTE_COST": f"{ops['route_cost']:.0f}",
         "LALD_CROCODILE_CELLS": str(ops["crocodile_cells"]),
+        "LALD_MIN_CROCODILE_CELLS": str(ops["min_crocodile_cells"]),
         "LALD_ROUTE_MOVES": str(ops["movement_cells"]),
         "LALD_ROUTE_START": f"({ops['start'][0]},{ops['start'][1]})",
         "LALD_ROUTE_GOAL": f"({ops['goal'][0]},{ops['goal'][1]})",
@@ -236,7 +251,7 @@ def resolve_manuscript_tree(
     sorted list of resolved file names.
     """
     manuscript_dir = Path(manuscript_dir) if manuscript_dir is not None else PACKAGE_ROOT / "manuscript"
-    output_dir = Path(output_dir) if output_dir is not None else PACKAGE_ROOT / "output" / "manuscript"
+    output_dir = Path(output_dir) if output_dir is not None else DEFAULT_MANUSCRIPT_OUTPUT_DIR
     resolved: list[str] = []
     for source in sorted(manuscript_dir.glob("[0-9][0-9]_*.md")):
         text = source.read_text(encoding="utf-8")

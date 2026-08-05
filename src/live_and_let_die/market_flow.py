@@ -12,15 +12,25 @@ product. This module models the canonical unit economics deterministically:
   average, the producer share (farm gate as a fraction of street price), the
   price-spread ratio, and gross revenue.
 
-The model reproduces the classic finding that the farm-gate producer captures
-only a small fraction of the street value — the "producer share" — which is the
-economic heart of narcotics interdiction. Pure, deterministic, stdlib-only; no
-``infrastructure.*`` and no ``bond_api``.
+**Parameter provenance — read this before quoting a number.** Every constant
+here (:data:`FARM_GATE_PRICE`, :data:`RETAIL_MARKUP`, :data:`RETAIL_DILUTION`
+and the ten markup/dilution pairs in :data:`EDGE_ECONOMICS`) is *invented* for
+this fictional scenario. None is estimated from, calibrated against, or
+otherwise traceable to any empirical dataset or published figure. Consequently
+the small producer share this module reports is an arithmetic consequence of
+the chosen markups, **not** a measurement and not a replication of the
+empirical literature on narcotics pricing. What the model does establish is the
+mechanism: a chain of multiplicative per-leg markups drives the farm-gate share
+down as the reciprocal of their product. ``tests/test_market_flow.py`` binds
+that mechanism by re-running the model on substituted parameter sets, so the
+headline share is demonstrably parameter-driven rather than a law.
+
+Pure, deterministic, stdlib-only; no ``infrastructure.*`` and no ``bond_api``.
 """
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Mapping
 
 from live_and_let_die.supply_graph import SAN_MONIQUE_DEMAND, SAN_MONIQUE_GRAPH
 
@@ -34,16 +44,20 @@ __all__ = [
 ]
 
 #: Farm-gate price in USD per kilogram of pure-equivalent at the source.
+#: Invented scenario parameter — not an empirical estimate.
 FARM_GATE_PRICE = 300.0
 
 #: Retail (street-level) markup multiplier applied after the final transit leg.
+#: Invented scenario parameter — not an empirical estimate.
 RETAIL_MARKUP = 3.0
 
 #: Retail-level purity dilution factor (the "cut" at the point of sale).
+#: Invented scenario parameter — not an empirical estimate.
 RETAIL_DILUTION = 0.75
 
 #: Per-leg economics: markup multiplier and purity dilution factor, keyed by
-#: ``(source, target)`` on the canonical San Monique graph.
+#: ``(source, target)`` on the canonical San Monique graph. All twenty numbers
+#: are chosen for the fictional scenario; none is sourced from data.
 EDGE_ECONOMICS: dict[tuple[str, str], tuple[float, float]] = {
     ("poppy_fields", "airfield"): (2.0, 0.95),
     ("poppy_fields", "field_works"): (1.2, 0.98),
@@ -60,18 +74,22 @@ EDGE_ECONOMICS: dict[tuple[str, str], tuple[float, float]] = {
 _SOURCE = "poppy_fields"
 
 
-def _path_price(node_id: str) -> tuple[float, float]:
+#: Type of the per-leg economics table.
+Economics = Mapping[tuple[str, str], tuple[float, float]]
+
+
+def _path_price(node_id: str, economics: Economics, farm_gate_price: float) -> tuple[float, float]:
     """(price, purity) at ``node_id`` along its cheapest path from the source.
 
-    Raises ``ValueError`` if a path edge has no defined economics (a dataset
-    inconsistency).
+    Raises ``ValueError`` if a path edge has no entry in ``economics`` (a
+    dataset inconsistency).
     """
     _, path = SAN_MONIQUE_GRAPH.shortest_path(_SOURCE, node_id)
-    price = FARM_GATE_PRICE
+    price = farm_gate_price
     purity = 1.0
     for src, dst in zip(path, path[1:], strict=False):
         try:
-            markup, dilution = EDGE_ECONOMICS[(src, dst)]
+            markup, dilution = economics[(src, dst)]
         except KeyError:
             raise ValueError(f"no economics defined for leg {src!r} -> {dst!r}") from None
         price *= markup
@@ -79,26 +97,50 @@ def _path_price(node_id: str) -> tuple[float, float]:
     return price, purity
 
 
-def node_prices() -> dict[str, tuple[float, float]]:
-    """Price and purity at every reachable node (source -> each destination)."""
-    result: dict[str, tuple[float, float]] = {_SOURCE: (FARM_GATE_PRICE, 1.0)}
+def node_prices(
+    economics: Economics | None = None,
+    farm_gate_price: float | None = None,
+) -> dict[str, tuple[float, float]]:
+    """Price and purity at every reachable node (source -> each destination).
+
+    ``economics`` and ``farm_gate_price`` default to the canonical (invented)
+    scenario parameters. They are injectable so a test can re-run the identical
+    model on a substituted parameter set and observe the result move — the only
+    way to show the headline producer share is parameter-driven.
+    """
+    table: Economics = EDGE_ECONOMICS if economics is None else economics
+    gate = FARM_GATE_PRICE if farm_gate_price is None else farm_gate_price
+    result: dict[str, tuple[float, float]] = {_SOURCE: (gate, 1.0)}
     for node_id in SAN_MONIQUE_GRAPH.node_ids():
         if node_id == _SOURCE:
             continue
         if SAN_MONIQUE_GRAPH.degree(node_id) > 0 or node_id in SAN_MONIQUE_DEMAND:
-            result[node_id] = _path_price(node_id)
+            result[node_id] = _path_price(node_id, table, gate)
     return dict(sorted(result.items()))
 
 
-def market_flow_report() -> dict[str, Any]:
-    """Run the canonical market-flow economic study (deterministic)."""
+def market_flow_report(
+    economics: Economics | None = None,
+    farm_gate_price: float | None = None,
+    retail_markup: float | None = None,
+    retail_dilution: float | None = None,
+) -> dict[str, Any]:
+    """Run the market-flow economic study (deterministic).
+
+    All four parameters default to the canonical invented scenario values; pass
+    substitutes to re-run the same model under different assumptions.
+    """
+    table: Economics = EDGE_ECONOMICS if economics is None else economics
+    gate = FARM_GATE_PRICE if farm_gate_price is None else farm_gate_price
+    markup = RETAIL_MARKUP if retail_markup is None else retail_markup
+    dilution = RETAIL_DILUTION if retail_dilution is None else retail_dilution
     markets: dict[str, Any] = {}
     avg_street_numerator = 0.0
     total_demand = 0.0
     for market_id in sorted(SAN_MONIQUE_DEMAND):
-        transit_price, transit_purity = _path_price(market_id)
-        street_price = transit_price * RETAIL_MARKUP
-        street_purity = transit_purity * RETAIL_DILUTION
+        transit_price, transit_purity = _path_price(market_id, table, gate)
+        street_price = transit_price * markup
+        street_purity = transit_purity * dilution
         demand = SAN_MONIQUE_DEMAND[market_id]
         revenue = demand * street_price
         markets[market_id] = {
@@ -110,10 +152,10 @@ def market_flow_report() -> dict[str, Any]:
         avg_street_numerator += demand * street_price
         total_demand += demand
     avg_street_price = avg_street_numerator / total_demand if total_demand else 0.0
-    producer_share = FARM_GATE_PRICE / avg_street_price if avg_street_price else 0.0
-    spread_ratio = avg_street_price / FARM_GATE_PRICE if FARM_GATE_PRICE else 0.0
+    producer_share = gate / avg_street_price if avg_street_price else 0.0
+    spread_ratio = avg_street_price / gate if gate else 0.0
     return {
-        "farm_gate_price": FARM_GATE_PRICE,
+        "farm_gate_price": gate,
         "markets": markets,
         "avg_street_price": avg_street_price,
         "producer_share": producer_share,

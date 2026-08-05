@@ -11,6 +11,7 @@ from live_and_let_die.island_ops import (
     TERRAIN_COSTS,
     TerrainGrid,
     TerrainRoute,
+    min_san_monique_crocodile_exposure,
     plan_san_monique_route,
 )
 
@@ -96,6 +97,56 @@ def test_crocodile_exposure_counts_only_cells() -> None:
     grid = TerrainGrid(SAN_MONIQUE_TERRAIN)
     path = ((5, 3), (4, 3), (4, 4), (8, 1))
     assert grid.crocodile_exposure(path) == 2  # (5,3) and (4,3) are croc water
+
+
+def test_min_crocodile_exposure_is_a_bound_over_all_routes() -> None:
+    """The universal claim ("any approach wades at least N") is computed as one.
+
+    Reading N off the cheapest route proves nothing about the alternatives; this
+    is the exposure-minimising search over the entire route space.
+    """
+    grid = TerrainGrid(SAN_MONIQUE_TERRAIN)
+    floor = grid.min_crocodile_exposure(ROUTE_START, ROUTE_GOAL)
+    assert floor == 4
+    assert min_san_monique_crocodile_exposure() == floor
+    # The cheapest route can never beat the floor.
+    assert plan_san_monique_route().crocodile_cells >= floor
+    assert grid.min_crocodile_exposure(ROUTE_START, ROUTE_START) == 0
+
+
+def test_min_exposure_differs_from_the_cheapest_routes_exposure() -> None:
+    """Positive control: the two quantities are genuinely different measures.
+
+    A one-cell crocodile shortcut (total cost 8) beside a crocodile-free
+    perimeter detour (total cost 14). The cheapest route wades one cell; the
+    exposure floor over all routes is zero. An implementation that just returned
+    ``plan_route(...).crocodile_cells`` — the defect being repaired — returns 1
+    here and fails.
+    """
+    grid = TerrainGrid(
+        (
+            "OCOOO",
+            "OXXXO",
+            "OXXXO",
+            "OXXXO",
+            "OOOOO",
+        )
+    )
+    cheapest = grid.plan_route((0, 0), (0, 2))
+    assert cheapest.crocodile_cells == 1
+    assert cheapest.cost == 8.0
+    assert grid.min_crocodile_exposure((0, 0), (0, 2)) == 0
+
+
+def test_min_crocodile_exposure_guardrails() -> None:
+    grid = TerrainGrid(SAN_MONIQUE_TERRAIN)
+    with pytest.raises(ValueError):
+        grid.min_crocodile_exposure((99, 0), ROUTE_GOAL)
+    with pytest.raises(ValueError):
+        grid.min_crocodile_exposure(ROUTE_START, (2, 0))  # impassable cliff
+    sealed = TerrainGrid(("XXX", "XCX", "XXX", "OOO"))
+    with pytest.raises(ValueError):
+        sealed.min_crocodile_exposure((1, 1), (3, 1))
 
 
 def test_deterministic_routes() -> None:

@@ -14,7 +14,10 @@ the cheapest route to each destination market ({{LALD_SHORTEST_MIAMI}} units to
 Miami), computes the maximum network throughput ({{LALD_MAX_FLOW}} units, capped
 by a min-cut value of {{LALD_MIN_CUT}}), and identifies the single highest-value
 interdiction target: the **{{LALD_BOTTLENECK}}**, whose neutralization stops
-{{LALD_DISRUPTION}} units of Miami throughput.
+{{LALD_DISRUPTION}} of those {{LALD_MAX_FLOW}} units. Both figures are measured
+on the same demand-capped flow model; the min cut itself is
+{{LALD_MIN_CUT_LIMIT}} and names no severable asset, so the target comes from
+the disruption probe and not from the cut.
 
 Building on the graph core, a **budgeted interdiction** study shows the network
 is operationally fragile: an optimal {{LALD_BUDGET}}-leg strike plan (greedy
@@ -27,11 +30,15 @@ symbol-substitution (key {{LALD_KEYWORD}}, recovering *"{{LALD_PLAINTEXT}}"*) an
 a {{LALD_DRUM_BEATS}}-beat drum-code transmission (exact round-trip, density
 {{LALD_DRUM_DENSITY}}) carrying *"{{LALD_DRUM_MESSAGE}}"*. A market-flow economic
 model traces price and purity from the farm gate
-({{LALD_FARM_GATE_PRICE}} $/kg) to the street, finding a farm gate-to-street
-spread of {{LALD_SPREAD_RATIO}}× and a producer share of just
-{{LALD_PRODUCER_SHARE}} of the {{LALD_TOTAL_REVENUE}} $ gross revenue.
+({{LALD_FARM_GATE_PRICE}} $/kg) to the street, yielding a farm gate-to-street
+spread of {{LALD_SPREAD_RATIO}}× and a producer share of
+{{LALD_PRODUCER_SHARE}} of the {{LALD_TOTAL_REVENUE}} $ gross revenue. Those two
+numbers are arithmetic consequences of invented scenario parameters, not
+empirical estimates — see §Scope.
 
 Finally, a terrain-graph infiltration planner routes an agent from the south
 landing beaches to the airfield at cost {{LALD_ROUTE_COST}}, wading
-{{LALD_CROCODILE_CELLS}} crocodile-water cells. All analyses are deterministic,
-real-data-only, and fully provenance-stamped (input hash `{{LALD_INPUT_HASH}}`).
+{{LALD_CROCODILE_CELLS}} crocodile-water cells against a computed floor of
+{{LALD_MIN_CROCODILE_CELLS}} over every possible route. All analyses are
+deterministic, real-data-only, and fully provenance-stamped (input hash
+`{{LALD_INPUT_HASH}}`).

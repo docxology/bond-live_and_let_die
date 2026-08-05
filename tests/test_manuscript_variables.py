@@ -9,6 +9,11 @@ from pathlib import Path
 import pytest
 
 from live_and_let_die.coded_comms import ALPHABET
+from live_and_let_die.figures import (
+    render_interdiction_curve,
+    render_island_route,
+    render_supply_graph,
+)
 from live_and_let_die.island_ops import SAN_MONIQUE_TERRAIN
 from live_and_let_die.mission import FILM, GADGET_REGISTRY, MISSION_SEED
 from live_and_let_die.manuscript_variables import (
@@ -21,6 +26,9 @@ from live_and_let_die.manuscript_variables import (
 )
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
+
+#: Markdown image embeds: ``![caption](path)``, caption may wrap across lines.
+_IMAGE_RE = re.compile(r"!\[[^\]]*\]\(([^)]+)\)")
 
 
 def test_load_existing_config() -> None:
@@ -57,6 +65,12 @@ def test_generate_variables_hydrates_metrics() -> None:
     assert variables["LALD_DRUM_ROUNDTRIP"] == "exact"
     assert variables["LALD_PRODUCER_SHARE"] == "1.7%"
     assert variables["LALD_SPREAD_RATIO"] == "59"
+    # Disruption is measured on the same demand-capped model as the throughput.
+    assert variables["LALD_DISRUPTION"] == "110"
+    assert int(variables["LALD_DISRUPTION"]) <= int(variables["LALD_MAX_FLOW"])
+    assert variables["LALD_MIN_CUT_LIMIT"] == "demand-limited"
+    assert variables["LALD_MIN_CUT_PHYSICAL_COUNT"] == "0"
+    assert variables["LALD_MIN_CROCODILE_CELLS"] == "4"
 
 
 def test_domain_modules_are_discovered_from_the_package() -> None:
@@ -197,6 +211,53 @@ def test_resolve_non_strict_allows_unknown_token(tmp_path: Path) -> None:
     variables = generate_variables()
     _, files = resolve_manuscript_tree(variables, manuscript_dir=mdir, output_dir=tmp_path / "o2", strict=False)
     assert files == ["00_y.md"]
+
+
+def test_every_rendered_figure_embed_resolves_to_a_real_file(tmp_path: Path) -> None:
+    """The manuscript must *contain* its figures, not merely mention them.
+
+    Before this gate the prose said "Figure ``interdiction_curve`` shows the
+    trade-off" while ``grep '!\\['`` over the manuscript returned nothing — the
+    PNGs were generated and never embedded, so no rendered artifact carried a
+    figure. This resolves the manuscript into a tree laid out exactly like
+    ``output/`` and opens every embedded path. Renaming a figure, deleting one,
+    or breaking the ``{{LALD_FIGURE_DIR}}`` token turns it red.
+    """
+    figures_dir = tmp_path / "figures"
+    manuscript_out = tmp_path / "manuscript"
+    render_supply_graph(figures_dir / "supply_graph.png")
+    render_interdiction_curve(figures_dir / "interdiction_curve.png")
+    render_island_route(figures_dir / "island_route.png")
+
+    variables = generate_variables()
+    out_dir, files = resolve_manuscript_tree(
+        variables, manuscript_dir=PACKAGE_ROOT / "manuscript", output_dir=manuscript_out
+    )
+
+    embedded: list[str] = []
+    for name in files:
+        for target in _IMAGE_RE.findall((out_dir / name).read_text(encoding="utf-8")):
+            embedded.append(target)
+            resolved = (out_dir / target).resolve()
+            assert resolved.is_file(), f"{name} embeds {target!r}, which does not exist at {resolved}"
+            assert resolved.stat().st_size > 0
+
+    assert sorted(Path(t).name for t in embedded) == [
+        "interdiction_curve.png",
+        "island_route.png",
+        "supply_graph.png",
+    ]
+
+
+def test_figure_dir_token_is_derived_from_the_real_output_paths() -> None:
+    """A hand-typed '../figures' would drift the moment a directory moved."""
+    from live_and_let_die.manuscript_variables import (
+        DEFAULT_FIGURE_DIR,
+        DEFAULT_MANUSCRIPT_OUTPUT_DIR,
+    )
+
+    token = generate_variables()["LALD_FIGURE_DIR"]
+    assert (DEFAULT_MANUSCRIPT_OUTPUT_DIR / token).resolve() == DEFAULT_FIGURE_DIR.resolve()
 
 
 def test_regex_matches_expected_token() -> None:

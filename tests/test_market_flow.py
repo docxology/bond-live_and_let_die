@@ -47,13 +47,73 @@ def test_market_flow_report_values() -> None:
     assert nyc["revenue"] == pytest.approx(2_160_000.0)
 
 
-def test_producer_share_is_small() -> None:
+def test_producer_share_and_spread_are_exact_reciprocals() -> None:
+    """An identity of the model, not a claim about the world."""
     report = market_flow_report()
-    # The classic finding: the farm-gate producer captures only ~1-2% of the
-    # street value of the narcotics.
-    assert 0.01 < report["producer_share"] < 0.05
-    assert report["spread_ratio"] > 20.0
+    assert report["producer_share"] * report["spread_ratio"] == pytest.approx(1.0)
+    assert report["producer_share"] == pytest.approx(report["farm_gate_price"] / report["avg_street_price"])
     assert report["total_revenue"] == pytest.approx(3_888_000.0)
+
+
+def test_producer_share_is_driven_by_the_assumed_markups() -> None:
+    """The small producer share is an output of chosen parameters, not a law.
+
+    The gate this replaces asserted ``0.01 < producer_share < 0.05`` and called
+    it "the classic finding" — a band that could not fail without editing the
+    constants it measured, and that bound nothing external. This test instead
+    re-runs the identical model on substituted parameter sets and demands the
+    share move with them, which is the property the model can actually support.
+    """
+    canonical = market_flow_report()["producer_share"]
+    assert canonical == pytest.approx(0.017, abs=5e-4)
+
+    # Neutral transit economics: no leg marks anything up. The producer share
+    # must then be exactly the reciprocal of the retail markup — far outside the
+    # "1-5%" band the old gate treated as an empirical finding.
+    neutral = {leg: (1.0, 1.0) for leg in EDGE_ECONOMICS}
+    neutral_share = market_flow_report(economics=neutral)["producer_share"]
+    assert neutral_share == pytest.approx(1.0 / RETAIL_MARKUP)
+    assert neutral_share > 0.05
+
+    # Doubling every leg markup drives the share down by exactly the path
+    # structure: Miami's cheapest path is two legs (x4), New York's is three
+    # (x8), so the demand-weighted share lands strictly between canonical/8 and
+    # canonical/4. This pins the propagation, not just the direction.
+    base = market_flow_report()
+    doubled = {leg: (markup * 2.0, dilution) for leg, (markup, dilution) in EDGE_ECONOMICS.items()}
+    doubled_report = market_flow_report(economics=doubled)
+    assert doubled_report["markets"]["miami"]["street_price"] == pytest.approx(
+        4.0 * base["markets"]["miami"]["street_price"]
+    )
+    assert doubled_report["markets"]["new_york"]["street_price"] == pytest.approx(
+        8.0 * base["markets"]["new_york"]["street_price"]
+    )
+    assert canonical / 8.0 < doubled_report["producer_share"] < canonical / 4.0
+
+    # The farm-gate price cancels out of the share but not out of revenue.
+    assert market_flow_report(farm_gate_price=600.0)["producer_share"] == pytest.approx(canonical)
+    assert market_flow_report(farm_gate_price=600.0)["total_revenue"] == pytest.approx(
+        2 * market_flow_report()["total_revenue"]
+    )
+
+
+def test_injected_parameters_reach_every_consumer() -> None:
+    """Guards the injection points themselves: an ignored argument fails here."""
+    prices = node_prices(farm_gate_price=1000.0)
+    assert prices["poppy_fields"] == (1000.0, 1.0)
+    assert prices["airfield"][0] == pytest.approx(2000.0)  # markup 2.0
+
+    halved = market_flow_report(retail_markup=RETAIL_MARKUP / 2.0)
+    assert halved["markets"]["miami"]["street_price"] == pytest.approx(7200.0)
+    cleaner = market_flow_report(retail_dilution=1.0)
+    assert cleaner["markets"]["miami"]["street_purity"] == pytest.approx(0.76)
+
+
+def test_missing_leg_economics_is_rejected() -> None:
+    """The ValueError path in ``_path_price`` — previously uncovered."""
+    incomplete = {leg: value for leg, value in EDGE_ECONOMICS.items() if leg != ("airfield", "miami")}
+    with pytest.raises(ValueError, match="no economics defined for leg"):
+        market_flow_report(economics=incomplete)
 
 
 def test_market_flow_deterministic() -> None:

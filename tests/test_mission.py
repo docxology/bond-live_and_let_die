@@ -14,6 +14,7 @@ from bond_api.protocol import (
 from bond_api.registry import GadgetRegistry
 from bond_api.serialization import from_json, to_json
 
+from live_and_let_die.island_ops import min_san_monique_crocodile_exposure
 from live_and_let_die.supply_graph import SAN_MONIQUE_GRAPH, Edge, Node, SupplyGraph
 from live_and_let_die.mission import (
     CODENAME,
@@ -113,6 +114,37 @@ def test_debrief_lessons() -> None:
     debrief = provider.debrief(outcome)
     assert "airfield" in debrief.lessons[0]
     assert any("crocodile" in lesson for lesson in debrief.lessons)
+
+
+def test_debrief_disruption_lesson_is_bounded_by_the_reported_throughput() -> None:
+    """The headline lesson must be sayable in the model that produced it.
+
+    It previously read "stops 150 units of Miami throughput" while the operative
+    model caps Miami at a demand ceiling of 120 — a number the model could not
+    support. The lesson now quotes the demand-capped disruption against the
+    demand-capped total, and both are asserted from the outcome payload.
+    """
+    provider = MissionProvider()
+    outcome = provider.execute(provider.plan(provider.brief()))
+    supply = outcome.results["supply"]
+    lesson = provider.debrief(outcome).lessons[0]
+
+    assert supply["disruption_units"] <= supply["max_flow_total"]
+    assert f"{supply['disruption_units']:.0f}" in lesson
+    assert f"{supply['max_flow_total']:.0f}" in lesson
+    assert "Miami throughput" not in lesson
+
+
+def test_debrief_universal_crocodile_claim_uses_the_all_routes_minimum() -> None:
+    """ "At least N" must quote the route-space floor, not one route's exposure."""
+    provider = MissionProvider()
+    outcome = provider.execute(provider.plan(provider.brief()))
+    ops = outcome.results["ops"]
+    lesson = next(lesson for lesson in provider.debrief(outcome).lessons if "crocodile" in lesson)
+
+    assert ops["min_crocodile_cells"] == min_san_monique_crocodile_exposure()
+    assert ops["min_crocodile_cells"] <= ops["crocodile_cells"]
+    assert f"at least {ops['min_crocodile_cells']}" in lesson
 
 
 def test_run_analysis_deterministic_and_rich() -> None:

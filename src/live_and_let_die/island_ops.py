@@ -11,6 +11,12 @@ tracks how much of the route crosses crocodile water.
   cheapest route plus its crocodile exposure.
 * :func:`TerrainGrid.crocodile_exposure` — how much of a route wades into
   crocodile water.
+* :func:`TerrainGrid.min_crocodile_exposure` — the *minimum over all routes* of
+  that exposure, so a statement of the form "any overland approach wades at
+  least N cells" is a computed lower bound rather than a property read off one
+  cheapest-cost route. The cheapest route's exposure is only an upper bound on
+  the minimum; the two differ whenever a longer crocodile-free detour exists,
+  and ``tests/test_island_ops.py`` pins exactly that case.
 
 Pure, deterministic, stdlib-only; no ``infrastructure.*`` and no ``bond_api``.
 """
@@ -28,6 +34,7 @@ __all__ = [
     "TERRAIN_COSTS",
     "TerrainGrid",
     "TerrainRoute",
+    "min_san_monique_crocodile_exposure",
     "plan_san_monique_route",
 ]
 
@@ -186,6 +193,42 @@ class TerrainGrid:
         """Number of crocodile-water cells traversed (excluding the start)."""
         return sum(1 for (r, c) in path[1:] if self.is_crocodile(r, c))
 
+    def min_crocodile_exposure(self, start: tuple[int, int], goal: tuple[int, int]) -> int:
+        """Fewest crocodile-water cells *any* traversable route can wade.
+
+        A second Dijkstra whose edge weight is 1 for entering a crocodile cell
+        and 0 otherwise. Because the objective is exposure rather than movement
+        cost, the result is a lower bound over the whole route space: no route
+        from ``start`` to ``goal`` wades fewer cells than this, whatever it
+        costs. That is the only basis on which a universally quantified claim
+        ("any overland approach wades at least N") may be made — the exposure of
+        the single cheapest route is an upper bound and proves nothing about the
+        alternatives.
+
+        Raises ``ValueError`` on the same invalid/unreachable endpoints as
+        :meth:`plan_route`.
+        """
+        if not self.traversable(*start):
+            raise ValueError(f"start {start} is not a traversable in-bounds cell")
+        if not self.traversable(*goal):
+            raise ValueError(f"goal {goal} is not a traversable in-bounds cell")
+        if start == goal:
+            return 0
+        best: dict[tuple[int, int], int] = {start: 0}
+        heap: list[tuple[int, int, int, tuple[int, int]]] = [(0, start[0], start[1], start)]
+        while heap:
+            exposure, _r, _c, cell = heapq.heappop(heap)
+            if exposure != best.get(cell):
+                continue
+            if cell == goal:
+                return exposure
+            for nxt in self.neighbors(*cell):
+                step = exposure + (1 if self.is_crocodile(*nxt) else 0)
+                if step < best.get(nxt, len(self._rows) * self._ncols + 1):
+                    best[nxt] = step
+                    heapq.heappush(heap, (step, nxt[0], nxt[1], nxt))
+        raise ValueError(f"no route from {start} to {goal}")
+
 
 # ---------------------------------------------------------------------------
 # Canonical San Monique terrain (deterministic). 9x9.
@@ -215,3 +258,12 @@ ROUTE_GOAL = (0, 4)
 def plan_san_monique_route() -> TerrainRoute:
     """Plan the canonical infiltration route across San Monique (deterministic)."""
     return TerrainGrid(SAN_MONIQUE_TERRAIN).plan_route(ROUTE_START, ROUTE_GOAL)
+
+
+def min_san_monique_crocodile_exposure() -> int:
+    """Fewest crocodile cells any San Monique beach-to-airfield route can wade.
+
+    The lower bound behind the manuscript's universal claim. It is computed over
+    the whole route space, not read off the cheapest route.
+    """
+    return TerrainGrid(SAN_MONIQUE_TERRAIN).min_crocodile_exposure(ROUTE_START, ROUTE_GOAL)

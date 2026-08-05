@@ -120,7 +120,8 @@ def test_sever_edges_rebuilds_valid_graph() -> None:
     assert graph.max_flow("s", "m") == 10.0
     plan = greedy_interdiction(graph, "s", "m", 1, [("s", "a")])
     assert plan.reduction == pytest.approx(10.0)
-    # Canonical graph unaffected.
-    assert SAN_MONIQUE_GRAPH.max_flow("poppy_fields", "miami") == pytest.approx(
-        SAN_MONIQUE_GRAPH.max_flow("poppy_fields", "miami")
-    )
+    # Canonical graph unaffected: pinned against the independently-known value,
+    # not against a second call to itself (which would pass even if severing
+    # had mutated the shared graph).
+    assert SAN_MONIQUE_GRAPH.max_flow("poppy_fields", "miami") == pytest.approx(220.0)
+    assert len(SAN_MONIQUE_GRAPH.edges()) == 10

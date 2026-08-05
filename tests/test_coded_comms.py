@@ -94,14 +94,40 @@ def test_score_plaintext_reference() -> None:
     assert score_plaintext("ABC", {}) == 0.0  # empty reference
 
 
-def test_solve_substitution_returns_guess_and_score() -> None:
+def test_solve_substitution_output_is_pinned_exactly() -> None:
+    """``solve_substitution`` is pure and deterministic — pin what it returns.
+
+    The previous assertions were ``isinstance(guess, str) and guess`` plus
+    ``score > 0.0``, which the function satisfies for literally any non-empty
+    ciphertext. They could not distinguish a working frequency attack from a
+    broken one. These pin the exact string and score.
+    """
     key = build_keyword_key()
     ct = encipher(SAN_MONIQUE_PLAINTEXT, key)
     guess, score = solve_substitution(ct)
-    assert isinstance(guess, str) and guess
-    assert score > 0.0
+    assert guess == "IEAEAHE LTON ORT NAEIT SDOT"
+    assert score == pytest.approx(0.926339967518, abs=1e-9)
+    assert len(guess) == len(ct)
+
     empty_guess, empty_score = solve_substitution("")
     assert empty_guess == "" and empty_score == 0.0
+
+
+def test_frequency_attack_does_not_recover_a_short_intercept() -> None:
+    """State the limitation as a test, not as a hope.
+
+    On a 27-character intercept the attack recovers nothing — and still scores
+    0.93 against the English reference. The score is a ranking heuristic, not
+    evidence of recovery, and this test fails loudly if anyone starts treating
+    it as the latter.
+    """
+    key = build_keyword_key()
+    ct = encipher(SAN_MONIQUE_PLAINTEXT, key)
+    guess, score = solve_substitution(ct)
+    assert guess != SAN_MONIQUE_PLAINTEXT
+    assert score > 0.9, "a high score coexists with a failed recovery — that is the point"
+    # Recovery *is* possible with the key; the attack is the weaker instrument.
+    assert decipher(ct, key) == SAN_MONIQUE_PLAINTEXT
 
 
 def test_symbol_roster_bijective() -> None:

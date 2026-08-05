@@ -9,11 +9,15 @@ from __future__ import annotations
 import pytest
 
 from live_and_let_die.supply_graph import (
+    SAN_MONIQUE_GRAPH,
+    SUPER_SINK,
+    SUPER_SOURCE,
     Edge,
     Node,
-    SAN_MONIQUE_GRAPH,
+    _flow_graph,
     analyze_san_monique,
     build_supply_graph,
+    classify_cut_edges,
 )
 
 
@@ -128,10 +132,59 @@ def test_analyze_san_monique_deterministic() -> None:
     second = analyze_san_monique()
     assert first == second
     assert first["critical_transit_node"] == "airfield"
-    assert first["disruption_units"] == 150.0
+    assert first["disruption_units"] == 110.0
     assert first["max_flow_total"] == 220.0
     assert first["min_cut_value"] == 220.0
     assert first["markets"] == ["miami", "new_york"]
     assert first["nodes"] == 7
     assert first["edges"] == 10
     assert first["shortest_path_miami"] == (13.0, ["poppy_fields", "airfield", "miami"])
+
+
+def test_reported_disruption_is_measured_on_the_reported_flow_model() -> None:
+    """The disruption headline and the throughput headline share one model.
+
+    The defect this pins: ``disruption_units`` was once computed on the RAW
+    graph (``poppy_fields -> miami``, no demand ceilings) while
+    ``max_flow_total`` came from the demand-capped flow graph. That produced
+    150 units of "Miami throughput" in a model where Miami absorbs at most 120.
+    The two computations below are genuinely different numbers on this dataset,
+    so the equality is not satisfiable by both — reverting the source to the raw
+    measurement turns this red.
+    """
+    report = analyze_san_monique()
+    critical = report["critical_transit_node"]
+    capped = _flow_graph().node_disruption(SUPER_SOURCE, SUPER_SINK, critical)
+    raw = SAN_MONIQUE_GRAPH.node_disruption("poppy_fields", "miami", critical)
+
+    assert capped != raw, "models coincide — this test would be vacuous"
+    assert report["disruption_units"] == pytest.approx(capped)
+    assert report["disruption_units"] != pytest.approx(raw)
+    # And the headline is coherent: you cannot stop more than the model moves.
+    assert report["disruption_units"] <= report["max_flow_total"]
+
+
+def test_min_cut_is_classified_and_reported_as_demand_limited() -> None:
+    """The cut on the canonical instance names no severable asset — say so."""
+    report = analyze_san_monique()
+    assert report["min_cut_physical_edges"] == []
+    assert report["min_cut_virtual_edges"] == [("miami", "DEMAND"), ("new_york", "DEMAND")]
+    assert report["min_cut_is_demand_limited"] is True
+
+
+def test_cut_classification_distinguishes_physical_legs() -> None:
+    """Positive control: a physical cut edge must classify as physical.
+
+    Without this, ``min_cut_is_demand_limited`` could be hardcoded True and
+    every assertion above would still pass.
+    """
+    classes = classify_cut_edges(
+        (
+            Edge("miami", SUPER_SINK, 0.0, 120.0),
+            Edge(SUPER_SOURCE, "poppy_fields", 0.0, 150.0),
+            Edge("airfield", "miami", 7.0, 90.0),
+        )
+    )
+    assert classes["physical"] == [("airfield", "miami")]
+    assert classes["virtual"] == [("SUPPLY", "poppy_fields"), ("miami", "DEMAND")]
+    assert classify_cut_edges(())["physical"] == []

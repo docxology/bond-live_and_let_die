@@ -13,6 +13,21 @@ answers the operational questions a disruptor cares about:
   the most throughput (:func:`SupplyGraph.critical_node` /
   :func:`SupplyGraph.disruption`).
 
+One modelling caveat is enforced rather than assumed: every throughput number
+reported by :func:`analyze_san_monique` — the max flow, the min cut, the
+critical transit node and its disruption value — is computed on the *same*
+demand-capped flow graph (:func:`_flow_graph`, super-source ``SUPPLY`` to
+super-sink ``DEMAND``). Measuring a disruption on the uncapped graph while
+reporting throughput on the capped one produces a headline number the model
+cannot support; ``tests/test_supply_graph.py`` pins the two apart so the
+mismatch cannot silently return.
+
+A second caveat is reported, not hidden: a minimum cut is a *capacity bound*,
+not automatically a target list. :func:`classify_cut_edges` splits the cut into
+physical supply legs and the virtual super-source/super-sink capacity edges,
+because a cut lying entirely on the virtual demand edges means the network is
+demand-limited and the cut names nothing an operation could strike.
+
 Pure, deterministic, stdlib-only (``heapq`` + ``collections.deque``). No
 ``infrastructure.*`` and no ``bond_api`` imports — the film's mission adapter
 lays the protocol on top of this core.
@@ -32,6 +47,7 @@ __all__ = [
     "SupplyGraph",
     "analyze_san_monique",
     "build_supply_graph",
+    "classify_cut_edges",
 ]
 
 PRODUCTION = "production"
@@ -389,6 +405,29 @@ SUPER_SINK = "DEMAND"
 #: of each market -> DEMAND edge in flow analysis.
 SAN_MONIQUE_DEMAND: dict[str, float] = {"miami": 120.0, "new_york": 100.0}
 
+#: The two synthetic nodes a flow formulation adds. Edges touching them model
+#: crop ceilings and market demand, not physical assets — nothing can be struck
+#: there, so any cut lying on them is a bound, not a target.
+VIRTUAL_NODES: frozenset[str] = frozenset({SUPER_SOURCE, SUPER_SINK})
+
+
+def classify_cut_edges(
+    cut_edges: Iterable[Edge],
+) -> dict[str, list[tuple[str, str]]]:
+    """Split min-cut edges into ``physical`` supply legs and ``virtual`` bounds.
+
+    A cut edge is *virtual* when either endpoint is a synthetic super-source or
+    super-sink node (:data:`VIRTUAL_NODES`): it encodes a crop ceiling or a
+    market demand ceiling. Only ``physical`` cut edges name assets an operation
+    could actually sever.
+    """
+    physical: list[tuple[str, str]] = []
+    virtual: list[tuple[str, str]] = []
+    for edge in cut_edges:
+        bucket = virtual if (edge.source in VIRTUAL_NODES or edge.target in VIRTUAL_NODES) else physical
+        bucket.append(edge.as_tuple())
+    return {"physical": sorted(physical), "virtual": sorted(virtual)}
+
 
 def build_supply_graph(nodes: Iterable[Node], edges: Iterable[Edge]) -> SupplyGraph:
     """Construct a :class:`SupplyGraph` from node/edge iterables (validated)."""
@@ -419,6 +458,13 @@ def analyze_san_monique() -> dict[str, Any]:
     Returns a flat dict with path, flow, cut, and disruption findings — the
     exact payload the mission ``execute`` step reports and the manuscript
     variables are computed from.
+
+    Every throughput figure (``max_flow_total``, ``min_cut_value``,
+    ``disruption_units``) is measured on the demand-capped flow graph, so the
+    disruption value is bounded by the reported throughput by construction. The
+    cut is additionally classified: ``min_cut_is_demand_limited`` is True when
+    the cut lies entirely on virtual crop/demand edges, i.e. when it bounds
+    throughput without naming any severable asset.
     """
     graph = SAN_MONIQUE_GRAPH
     flow_graph = _flow_graph()
@@ -427,8 +473,9 @@ def analyze_san_monique() -> dict[str, Any]:
     shortest_new_york = graph.shortest_path(production, "new_york")
     total_flow = flow_graph.max_flow(SUPER_SOURCE, SUPER_SINK)
     bottleneck_value, cut_edges = flow_graph.min_cut(SUPER_SOURCE, SUPER_SINK)
-    critical = graph.critical_node(production, "miami")
-    disruption = graph.node_disruption(production, "miami", critical)
+    cut_classes = classify_cut_edges(cut_edges)
+    critical = flow_graph.critical_node(SUPER_SOURCE, SUPER_SINK)
+    disruption = flow_graph.node_disruption(SUPER_SOURCE, SUPER_SINK, critical)
     markets = sorted(n.id for n in graph.nodes_of_kind(MARKET))
     return {
         "nodes": len(graph.node_ids()),
@@ -439,6 +486,9 @@ def analyze_san_monique() -> dict[str, Any]:
         "max_flow_total": total_flow,
         "min_cut_value": bottleneck_value,
         "min_cut_edges": sorted(e.as_tuple() for e in cut_edges),
+        "min_cut_physical_edges": cut_classes["physical"],
+        "min_cut_virtual_edges": cut_classes["virtual"],
+        "min_cut_is_demand_limited": not cut_classes["physical"],
         "critical_transit_node": critical,
         "disruption_units": disruption,
     }

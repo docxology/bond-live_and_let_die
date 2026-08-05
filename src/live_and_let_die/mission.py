@@ -49,6 +49,7 @@ from live_and_let_die.island_ops import (
     ROUTE_GOAL,
     ROUTE_START,
     SAN_MONIQUE_TERRAIN,
+    min_san_monique_crocodile_exposure,
     plan_san_monique_route,
 )
 from live_and_let_die.market_flow import EDGE_ECONOMICS, market_flow_report
@@ -133,6 +134,9 @@ def run_analysis() -> dict[str, Any]:
         "route_cost": route.cost,
         "movement_cells": route.edge_count(),
         "crocodile_cells": route.crocodile_cells,
+        # Minimum over *all* routes, not this one: the only quantity that
+        # licenses a "any approach wades at least N" statement.
+        "min_crocodile_cells": min_san_monique_crocodile_exposure(),
         "path": [list(cell) for cell in route.path],
     }
     return {
@@ -286,13 +290,16 @@ class MissionProvider:  # noqa: N801 — name fixed by the discovery contract
             outcome=outcome,
             lessons=(
                 f"interdict the {supply['critical_transit_node']} — neutralizing it "
-                f"stops {supply['disruption_units']:.0f} units of Miami throughput",
+                f"stops {supply['disruption_units']:.0f} of the "
+                f"{supply['max_flow_total']:.0f} units the demand-capped network moves",
                 f"a {interdict['budget']}-leg strike plan achieves an optimal "
                 f"{interdict['exact']['reduction']:.0f}-unit reduction (greedy "
                 f"{interdict['greedy']['reduction']:.0f}) — collapse the operation",
-                f"the farm-gate producer keeps only {market['producer_share'] * 100:.1f}% "
-                "of street value — the whole chain must be disrupted, not the field",
-                f"any overland approach to the airfield wades at least {ops['crocodile_cells']} crocodile-water cells",
+                f"under the scenario's assumed markups the farm-gate producer keeps only "
+                f"{market['producer_share'] * 100:.1f}% of street value — disrupt the chain, not the field",
+                f"any overland approach to the airfield wades at least "
+                f"{ops['min_crocodile_cells']} crocodile-water cells (minimum over all routes; "
+                f"the cheapest route wades {ops['crocodile_cells']})",
                 "the communiqué deciphers under the voodoo keyword substitution",
             ),
         )

@@ -69,17 +69,31 @@ a `{{TOKEN}}`; none is typed into prose. Re-derive them with
 
 - Supply graph: 7 nodes, 10 legs; cheapest Miami route `poppy_fields -> airfield
   -> miami` (cost 13); max throughput 220 units, min-cut 220; the critical
-  transit node is the **airfield** (150 units of Miami throughput).
+  transit node is the **airfield** (110 of those 220 units). Throughput and
+  disruption are measured on the same demand-capped flow model, so the second
+  number is bounded by the first.
+- The min cut is `miami -> DEMAND` and `new_york -> DEMAND` — both *virtual*
+  demand-ceiling edges, zero physical legs. The network is demand-limited, and
+  the cut is a capacity bound that names no severable asset. Targeting comes
+  from the per-node disruption probe and the interdiction study, never the cut.
 - **Interdiction**: an optimal 3-leg strike plan (greedy 220, exact 220)
   collapses the whole operation; the top target leg `field_works -> harbor` is
   worth 50 units alone.
 - The voodoo communiqué deciphers under the BARON keyword to
-  *"KANANGA LETS THE SNAKE BITE"*; the drums carry a 195-beat message that
-  decodes exactly to the same plaintext.
-- **Market economics**: producer share is 1.7% of street value; a 59×
-  farm-gate-to-street price spread; ~$3.89M gross revenue.
-- Infiltration route (cost 41, 11 moves) wades 4 crocodile-water cells to the
-  airfield.
+  *"KANANGA LETS THE SNAKE BITE"*. The unkeyed frequency attack does **not**
+  recover it at this length — it returns `IEAEAHE LTON ORT NAEIT SDOT` while
+  scoring 0.93 against the English reference, which is why the score is a
+  ranking heuristic and not evidence of recovery. The drums carry a 195-beat
+  message that decodes exactly to the plaintext.
+- **Market economics**: producer share 1.7% of street value, 59×
+  farm-gate-to-street spread, ~$3.89M gross revenue. Every economic parameter
+  (`FARM_GATE_PRICE`, `RETAIL_MARKUP`, `RETAIL_DILUTION`, all ten
+  `EDGE_ECONOMICS` pairs) is **invented for this fictional scenario** — none is
+  fitted to data, so these are outputs of chosen assumptions, not estimates.
+- Infiltration route (cost 41, 11 moves) wades 4 crocodile-water cells. A
+  separate exposure-minimising search puts the floor over *every* route at 4,
+  which is what licenses the claim that any overland approach must wade at
+  least that many.
 
 ## Install
 
@@ -111,6 +125,12 @@ provenance seed, terrain grid shape, and drum timing constants.
 sections to `output/manuscript/`; strict mode fails on any unresolved token, and
 `tests/test_manuscript_variables.py` fails on any token used in prose that
 `generate_variables()` does not produce.
+
+All three figures are **embedded** in the results section via
+`![caption]({{LALD_FIGURE_DIR}}/name.png)`. `LALD_FIGURE_DIR` is derived from the
+real `output/figures` and `output/manuscript` paths, so the rendered section
+carries a link that resolves; a test renders the figures, resolves the
+manuscript, and opens every embedded path, failing if one is missing or renamed.
 
 ## Verification gates
 

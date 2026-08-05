@@ -21,10 +21,17 @@ spanning three research literatures:
   rhythm codec over a per-beat grid whose element and gap durations follow the
   normative International Morse timing ratios (`itu2009`) — a numerical
   treatment of the Caribbean drum telegraphy the film uses.
-- **Narcotics market economics.** The farm-gate-to-street price and purity
-  model, and its headline producer-share finding, follow the economic analysis
-  of drug enforcement prices of Reuter & Kleiman and Caulkins & Reuter
-  (`reuter1986`, `caulkins2010`).
+- **Narcotics market economics.** The *question* — who captures the value
+  between farm gate and street, and what that implies for enforcement — is the
+  one posed by Reuter & Kleiman and by Caulkins & Reuter (`reuter1986`,
+  `caulkins2010`). The *parameters* are not theirs and are not anyone's data:
+  the farm-gate price, the retail markup and dilution, and all ten per-leg
+  markup/dilution pairs in `EDGE_ECONOMICS` were chosen for this fictional
+  scenario. Nothing here estimates, calibrates against, or reproduces a
+  published figure, and the producer share reported in §Results should not be
+  read as agreeing or disagreeing with any empirical estimate. The model
+  contributes a mechanism — multiplicative per-leg markups compress the
+  producer's share — exercised on invented numbers.
 - **Terrain pathfinding.** Grid Dijkstra is the standard cost-minimising planner
   for rasterized maps, applied to a hazard-labelled island.
 

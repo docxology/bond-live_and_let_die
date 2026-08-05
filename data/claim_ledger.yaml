@@ -8,16 +8,28 @@ claims:
     value: 220
     source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> max_flow_total"
   - id: "supply-min-cut"
-    description: "Minimum cut bounding total throughput"
+    description: >-
+      Minimum cut bounding total throughput. NOT a target list: the cut lies
+      entirely on virtual market-demand edges (0 physical legs), so the network
+      is demand-limited and the cut names no severable asset.
     value: 220
     source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> min_cut_value"
+  - id: "supply-min-cut-physical-legs"
+    description: "Physical (severable) supply legs appearing in the minimum cut"
+    value: 0
+    source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> min_cut_physical_edges"
   - id: "supply-critical-node"
-    description: "Highest-value interdiction target (transit node)"
+    description: >-
+      Highest-value interdiction target (transit node), from the per-node
+      disruption probe on the demand-capped flow graph — not from the min cut.
     value: "airfield"
     source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> critical_transit_node"
   - id: "supply-disruption"
-    description: "Miami throughput lost by neutralizing the critical node"
-    value: 150
+    description: >-
+      Demand-capped network throughput (of 220 total) lost by neutralizing the
+      critical node. Measured on the same SUPPLY->DEMAND flow graph as
+      supply-max-flow, so it is bounded by it.
+    value: 110
     source: "src/live_and_let_die/supply_graph.py::analyze_san_monique -> disruption_units"
   - id: "comms-plaintext"
     description: "Deciphered voodoo communiqué"
@@ -28,9 +40,16 @@ claims:
     value: 41
     source: "src/live_and_let_die/island_ops.py::plan_san_monique_route -> cost"
   - id: "ops-crocodile-cells"
-    description: "Crocodile-water cells crossed by the infiltration route"
+    description: "Crocodile-water cells crossed by the cheapest infiltration route"
     value: 4
     source: "src/live_and_let_die/island_ops.py::plan_san_monique_route -> crocodile_cells"
+  - id: "ops-min-crocodile-cells"
+    description: >-
+      Minimum crocodile-water cells over ALL beach-to-airfield routes. This, not
+      ops-crocodile-cells, is what supports the universal claim that any
+      overland approach must wade at least this many.
+    value: 4
+    source: "src/live_and_let_die/island_ops.py::min_san_monique_crocodile_exposure"
   - id: "interdict-reduction"
     description: "Optimal 3-leg interdiction throughput reduction"
     value: 220
@@ -44,10 +63,22 @@ claims:
     value: 195
     source: "src/live_and_let_die/voodoo_drums.py::drum_report -> beats"
   - id: "market-producer-share"
-    description: "Farm-gate producer share of street value"
+    description: >-
+      Farm-gate producer share of street value. SCENARIO OUTPUT, NOT AN
+      ESTIMATE: every economic parameter (FARM_GATE_PRICE, RETAIL_MARKUP,
+      RETAIL_DILUTION, all ten EDGE_ECONOMICS pairs) is invented for this
+      fictional case and fitted to no data. Do not compare to empirical figures.
     value: 0.017
     source: "src/live_and_let_die/market_flow.py::market_flow_report -> producer_share"
   - id: "market-revenue"
-    description: "Gross per-market revenue (USD)"
+    description: "Gross per-market revenue (USD) — scenario output on invented parameters"
     value: 3888000
     source: "src/live_and_let_die/market_flow.py::market_flow_report -> total_revenue"
+  - id: "comms-frequency-attack-failure"
+    description: >-
+      The unkeyed frequency attack does NOT recover the canonical intercept: on
+      27 characters it returns this garbage candidate while scoring 0.926
+      against the English reference. Recorded so the score is never read as
+      evidence of recovery.
+    value: "IEAEAHE LTON ORT NAEIT SDOT"
+    source: "src/live_and_let_die/coded_comms.py::solve_substitution"

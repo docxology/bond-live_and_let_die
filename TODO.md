@@ -8,8 +8,9 @@ because someone still has to do them.
 
 - **`SAN_MONIQUE_MESSAGE` is misnamed.** It is a *function* in `coded_comms.py`
   wearing a constant's name (upper case). It is exported in the module's
-  `__all__` but consumed by nothing — not `mission.py`, not `__init__.py`, not
-  the tests. Either rename it to `san_monique_message()` or drop it; both are
+  `__all__` but consumed by no production code — not `mission.py`, not
+  `__init__.py`; only `tests/test_coded_comms.py::test_san_monique_message_constant`
+  calls it. Either rename it to `san_monique_message()` or drop it; both are
   breaking changes to the module's public names, so do it deliberately rather
   than as a drive-by.
 - **Unreachable strict-mode guard.** `manuscript_variables.generate_variables`
@@ -18,14 +19,19 @@ because someone still has to do them.
   permanently uncovered. Either give `--allow-draft` a path that can actually
   produce a partial analysis, or remove the guard and the parameter with it.
 - **Two partial branches with no reachable false path** —
-  `interdiction.py:115->111` and `manuscript_variables.py:95->97`. Both are loop
+  `interdiction.py:115->111` and `manuscript_variables.py:103->105`. Both are loop
   or membership guards that hold for every canonical input. Harmless, but they
   are the shape a vacuous condition takes; if either module grows a dataset with
   no infinite-cost terrain or an empty severable set, add the case.
-- **`market_flow.py` is the coverage floor** of the package (94.64%). The
-  uncovered lines are the missing-leg-economics `ValueError` path, reachable only
-  through `node_prices` and not through `market_flow_report`. Worth a direct test
-  if the economics dataset is ever allowed to diverge from the graph.
+- **`island_ops.py` is now the coverage floor** (95.81%). The uncovered lines are
+  the stale-heap-entry `continue` in both Dijkstra loops — reachable in principle
+  but not on any canonical or test grid. Not a claim about anything; left alone
+  rather than papered over with a contrived grid.
+- **The min-cut classification is only asserted on one instance.** The canonical
+  cut is entirely virtual, so `min_cut_is_demand_limited` is True and the
+  *transit-limited* branch of that report field is never exercised end-to-end.
+  `classify_cut_edges` itself has a positive control, but a second canonical
+  dataset whose cut falls on a physical leg would bind the reporting path too.
 
 ## Open — needs a decision outside this package
 
@@ -38,9 +44,11 @@ because someone still has to do them.
 - **Provenance persistence.** Gadget payloads are opaque callables. When
   `bond-utilities` ships `mission_io.record_provenance_outcome`, `execute()` can
   additionally persist through it. The pure core needs no change.
-- **Manuscript rendering.** Sections hydrate to `output/manuscript/`. Wiring this
-  package into the suite's Pandoc PDF pipeline is a shared follow-up owned at the
-  bond root, not here.
+- **Manuscript rendering.** Sections hydrate to `output/manuscript/` and embed
+  their three figures at `{{LALD_FIGURE_DIR}}/*.png`, which resolves correctly
+  from that directory. Whether the suite's Pandoc PDF pipeline runs from
+  `output/manuscript/` (it must, for those paths to hold) or supplies its own
+  `--resource-path` is a shared follow-up owned at the bond root, not here.
 
 ## Not open (deliberate, do not "fix")
 
@@ -50,6 +58,17 @@ because someone still has to do them.
   provenance record stops being reproducible.
 - **`MISSION_SEED = 8` with no random draws.** The seed is recorded for suite
   parity, not consumed — every result is deterministic without it.
+- **The economic parameters are invented, and the docs say so.** Do not
+  "improve" `EDGE_ECONOMICS`, `FARM_GATE_PRICE`, `RETAIL_MARKUP` or
+  `RETAIL_DILUTION` by attributing them to Reuter & Kleiman or Caulkins &
+  Reuter. Those papers motivate the question; they did not supply these numbers,
+  and claiming otherwise is the exact overclaim §Scope now rules out. Either
+  genuinely calibrate against a cited table — and then say which one — or leave
+  the disclosure alone.
+- **The frequency attack is allowed to fail.** `solve_substitution` does not
+  recover the 27-character intercept, and two tests pin that. Do not tune the
+  reference distribution to make it "work" on this one string; do not soften the
+  docstring. If a longer corpus is ever added, demonstrate recovery there.
 
 ## Verification
 
