@@ -50,11 +50,25 @@ def test_execute_writes_outcome_artifact() -> None:
     assert artifact.is_file() and artifact.stat().st_size > 0
 
 
-def test_generate_figures_writes_pngs() -> None:
+def test_generate_figures_writes_every_png() -> None:
+    """The generator must render every figure the manuscript cites.
+
+    ``interdiction_curve.png`` is asserted explicitly: it existed in
+    ``figures/plots.py`` and was referenced by the results section while the
+    generator script never called it, so the documented figure was never
+    produced by the documented command.
+    """
+    figures_dir = PACKAGE_ROOT / "output" / "figures"
+    for name in ("supply_graph.png", "interdiction_curve.png", "island_route.png"):
+        stale = figures_dir / name
+        if stale.exists():
+            stale.unlink()
+
     result = _run("generate_figures.py")
     assert result.returncode == 0, result.stderr
-    for name in ("supply_graph.png", "island_route.png"):
-        assert (PACKAGE_ROOT / "output" / "figures" / name).is_file()
+    for name in ("supply_graph.png", "interdiction_curve.png", "island_route.png"):
+        target = figures_dir / name
+        assert target.is_file() and target.stat().st_size > 0, f"{name} was not rendered"
 
 
 def test_z_generate_manuscript_variables_strict() -> None:
@@ -71,3 +85,27 @@ def test_scripts_are_mockfree() -> None:
         text = script.read_text(encoding="utf-8")
         assert "unittest.mock" not in text
         assert "MagicMock" not in text
+        assert "mocker.patch" not in text
+
+
+def test_preflight_gate_survives_optimized_python() -> None:
+    """The preflight checks must not be bare asserts.
+
+    ``python -O`` strips ``assert`` statements, so a gate built on them passes
+    unconditionally. Running preflight under ``-O`` proves the checks are real
+    conditionals; the source scan proves it stays that way.
+    """
+    result = subprocess.run(
+        [sys.executable, "-O", str(SCRIPTS / "00_preflight.py")],
+        cwd=str(PACKAGE_ROOT),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "PREFLIGHT PASS" in result.stdout
+
+    source = (SCRIPTS / "00_preflight.py").read_text(encoding="utf-8")
+    offenders = [
+        line.strip() for line in source.splitlines() if line.strip().startswith("assert ") or line.strip() == "assert"
+    ]
+    assert not offenders, f"preflight must not gate on bare asserts: {offenders}"

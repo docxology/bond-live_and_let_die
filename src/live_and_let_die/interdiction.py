@@ -126,8 +126,11 @@ def efficiency_ranking(
 ) -> tuple[tuple[tuple[str, str], float], ...]:
     """Independent throughput impact of severing each leg, ranked descending.
 
-    Only the real transit legs are considered (never the virtual
-    source/sink edges). Ties break alphabetically by leg.
+    Exactly the legs in ``severable`` are ranked — the caller decides the
+    candidate set. :func:`interdict_san_monique` passes only the real transit
+    legs, never the virtual super-source/super-sink edges (severing those would
+    measure the capacity bound, not an operational strike). Ties break
+    alphabetically by leg.
     """
     base = graph.max_flow(source, sink)
     legs = _sorted_severable(graph, severable)
@@ -216,7 +219,8 @@ def exact_interdiction(
         if reduction > best_reduction + _EPS:
             best_reduction = reduction
             best_combo = combo
-    assert best_combo is not None
+    if best_combo is None:  # pragma: no cover — unreachable: legs is non-empty here
+        raise RuntimeError("exhaustive interdiction enumerated no candidate subset")
     return InterdictionPlan(
         budget=budget,
         severed=best_combo,

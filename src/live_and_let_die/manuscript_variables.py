@@ -20,20 +20,46 @@ from typing import Any
 
 import yaml
 
+from live_and_let_die.coded_comms import ALPHABET
+from live_and_let_die.island_ops import SAN_MONIQUE_TERRAIN, TERRAIN_COSTS, TERRAIN_NAMES, TerrainGrid
 from live_and_let_die.mission import (
     CODENAME,
     FILM,
+    GADGET_REGISTRY,
+    MISSION_SEED,
     input_digest,
     run_analysis,
 )
 from live_and_let_die.supply_graph import SUPER_SINK, SUPER_SOURCE
+from live_and_let_die.voodoo_drums import DASH, DOT, GAP_INTRA, GAP_LETTER, GAP_WORD
 
-__all__ = ["generate_variables", "load_manuscript_config", "resolve_manuscript_tree"]
+__all__ = [
+    "domain_modules",
+    "generate_variables",
+    "load_manuscript_config",
+    "resolve_manuscript_tree",
+]
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG_PATH = PACKAGE_ROOT / "manuscript" / "config.yaml"
 
 _TOKEN_RE = re.compile(r"\{\{[A-Z0-9_]+\}\}")
+
+#: Modules that are *not* part of the pure domain core: the protocol adapter,
+#: this hydration module, and the package marker.
+_NON_DOMAIN_MODULES = frozenset({"__init__", "mission", "manuscript_variables"})
+
+
+def domain_modules() -> tuple[str, ...]:
+    """Names of the pure domain-core modules, discovered from the package dir.
+
+    Derived rather than listed, so adding a domain module updates the manuscript
+    count without anyone remembering to edit prose. ``mission.py`` (the protocol
+    adapter), this module, and ``__init__.py`` are excluded; ``figures/`` is a
+    rendering subpackage, not a domain module.
+    """
+    package_dir = Path(__file__).resolve().parent
+    return tuple(sorted(path.stem for path in package_dir.glob("*.py") if path.stem not in _NON_DOMAIN_MODULES))
 
 
 def load_manuscript_config(config_path: str | Path | None = None) -> dict[str, Any]:
@@ -50,6 +76,34 @@ def load_manuscript_config(config_path: str | Path | None = None) -> dict[str, A
 
 def _join_path(segments: list[str]) -> str:
     return " -> ".join(segments)
+
+
+def _terrain_cost_table() -> str:
+    """Render the terrain cost legend from :data:`TERRAIN_COSTS` (never typed).
+
+    Finite costs are grouped so equal-cost terrains read naturally ("road /
+    open ground / beach cost 1"); impassable glyphs are named as such.
+    """
+    grouped: dict[float, list[str]] = {}
+    for glyph, cost in TERRAIN_COSTS.items():
+        grouped.setdefault(cost, []).append(TERRAIN_NAMES[glyph])
+    parts: list[str] = []
+    for cost in sorted(c for c in grouped if c != float("inf")):
+        parts.append(f"{' / '.join(grouped[cost])} cost {cost:.0f}")
+    if float("inf") in grouped:
+        parts.append(f"{' / '.join(grouped[float('inf')])} infinite")
+    return ", ".join(parts)
+
+
+def _mission_objectives(config: dict[str, Any]) -> list[str]:
+    """The declared mission objectives from ``manuscript/config.yaml``."""
+    mission = config.get("mission", {})
+    if not isinstance(mission, dict):
+        raise ValueError("manuscript config 'mission' section must be a mapping")
+    objectives = mission.get("objectives", [])
+    if not isinstance(objectives, list):
+        raise ValueError("manuscript config 'mission.objectives' must be a list")
+    return [str(item) for item in objectives]
 
 
 def generate_variables(
@@ -88,6 +142,7 @@ def generate_variables(
     ranking_leg = top_target["leg"]
     ranking_drop = top_target["reduction"]
     markets = sorted(market["markets"])
+    terrain = TerrainGrid(SAN_MONIQUE_TERRAIN)
     return {
         "LALD_IDENTITY": str(paper.get("identity", FILM)),
         "LALD_CODENAME": str(paper.get("codename", CODENAME)),
@@ -95,8 +150,22 @@ def generate_variables(
         "LALD_VERSION": str(paper.get("version", "")),
         "LALD_TITLE": str(paper.get("title", "")),
         "LALD_SUBTITLE": str(paper.get("subtitle", "")),
-        "LALD_NUM_OBJECTIVES": "3",
+        "LALD_NUM_OBJECTIVES": str(len(_mission_objectives(config))),
         "LALD_MISSION_PHASES": "brief, recon, plan, execute, debrief",
+        # Configuration constants: reported through tokens so a change to the
+        # code moves the prose with it (no hand-authored constants either).
+        "LALD_SEED": str(MISSION_SEED),
+        "LALD_MODULE_COUNT": str(len(domain_modules())),
+        "LALD_GADGET_COUNT": str(len(GADGET_REGISTRY.gadgets_for(FILM))),
+        "LALD_ALPHABET_SIZE": str(len(ALPHABET)),
+        "LALD_TERRAIN_ROWS": str(terrain.nrows),
+        "LALD_TERRAIN_COLS": str(terrain.ncols),
+        "LALD_TERRAIN_SHAPE": f"{terrain.nrows}x{terrain.ncols}",
+        "LALD_TERRAIN_COSTS": _terrain_cost_table(),
+        "LALD_DRUM_TIMING": (
+            f"dot = {DOT} sounding beat, dash = {DASH}; intra-letter gap "
+            f"{GAP_INTRA}, inter-letter gap {GAP_LETTER}, inter-word gap {GAP_WORD}"
+        ),
         "LALD_SUPPLY_NODES": str(supply["nodes"]),
         "LALD_SUPPLY_EDGES": str(supply["edges"]),
         "LALD_MARKETS": ", ".join(supply["markets"]),

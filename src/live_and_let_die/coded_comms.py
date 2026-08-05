@@ -219,12 +219,12 @@ def symbol_roster(alphabet: str = ALPHABET) -> dict[str, str]:
     return {ch: sym for ch, sym in zip(alphabet, symbols)}
 
 
-#: The intercepted, still-enciphered voodoo communiqué (deterministic).
 def SAN_MONIQUE_MESSAGE(key: Mapping[str, str] | None = None) -> tuple[str, str]:
     """Return ``(plaintext, ciphertext)`` for the canonical San Monique message.
 
-    If ``key`` is omitted the canonical keyword key is used, so the ciphertext
-    is stable across calls.
+    Upper-cased like the canonical datasets it derives from, but a *function*,
+    not a constant: the ciphertext depends on the key. If ``key`` is omitted the
+    canonical keyword key is used, so the ciphertext is stable across calls.
     """
     resolved = key if key is not None else build_keyword_key()
     return SAN_MONIQUE_PLAINTEXT, encipher(SAN_MONIQUE_PLAINTEXT, resolved)

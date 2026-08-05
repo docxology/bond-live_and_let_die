@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 name = "live_and_let_die"
 version = "0.1.0"
 license = {text = "MIT"}
-description = "LIVE AND LET DIE (1973) — SAN MONIQUE special-agent mission software: narcotics supply-graph analytics, voodoo-coded communiqué deciphering, Caribbean island ops planning."
+description = "LIVE AND LET DIE (1973) — SAN MONIQUE special-agent mission software: narcotics supply-graph analytics and budgeted network interdiction, voodoo-coded communiqué and drum-code deciphering, farm-gate-to-street market economics, and Caribbean island ops planning."
 authors = [
     {name = "Daniel Ari Friedman", email = "daniel@activeinference.institute"}
 ]

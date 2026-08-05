@@ -9,8 +9,9 @@
   Computer Modelling — the budgeted interdiction formulation.
 - Stinson, D. R. & Paterson, M. B. (2019). *Cryptography: Theory and Practice*,
   4th ed. CRC Press — monoalphabetic substitution and frequency analysis.
-- Morse, S. F. B. (1938). *Universal Electrical Communications Signal Code* —
-  International Morse timing conventions for the drum codec.
+- International Telecommunication Union (2009). *International Morse code*,
+  Recommendation ITU-R M.1677-1 — the normative dot/dash and gap timing ratios
+  the drum codec implements.
 - Reuter, P. & Kleiman, M. A. R. (1986). *Risks and Prices: An Economic
   Analysis of Drug Enforcement*. Crime and Justice — pricing along the supply
   chain.

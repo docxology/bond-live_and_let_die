@@ -3,7 +3,12 @@
 
 Checks that bond-api (the FROZEN protocol) is importable, that the film's
 MissionProvider satisfies the protocol, and that a full deterministic run
-succeeds. Exits 0 only if every check passes.
+succeeds. Exits 0 only if every check passes, and non-zero (with the failed
+check named on stderr) otherwise.
+
+The checks are explicit conditionals, never bare ``assert`` statements: under
+``python -O`` asserts are stripped, which would turn this gate into an
+unconditional pass.
 """
 
 from __future__ import annotations
@@ -16,23 +21,40 @@ sys.path.insert(0, str(ROOT / "src"))  # noqa: E402
 
 import bond_api  # noqa: E402
 from bond_api.protocol import MissionProvider as ProviderProtocol  # noqa: E402
-from bond_api.protocol import protocol_surface, run_mission  # noqa: E402
-from live_and_let_die.mission import MissionProvider  # noqa: E402
+from bond_api.protocol import ReconRequest, protocol_surface, run_mission  # noqa: E402
+from live_and_let_die.mission import FILM, MissionProvider  # noqa: E402
+
+#: The frozen bond-api mission flow: brief, recon, plan, execute, debrief.
+EXPECTED_PROVIDER_METHODS = 5
+
+
+def _fail(reason: str) -> int:
+    """Report a failed preflight check on stderr and yield a non-zero status."""
+    print(f"PREFLIGHT FAIL: {reason}", file=sys.stderr)
+    return 1
 
 
 def main() -> int:
+    """Run every preflight check; return 0 only when all of them hold."""
     surface = protocol_surface()
-    assert surface["dataclasses"], "bond_api exposed no dataclasses"
-    assert len(surface["provider_methods"]) == 5, "mission flow must have 5 stages"
+    if not surface["dataclasses"]:
+        return _fail("bond_api exposed no protocol dataclasses")
+    if len(surface["provider_methods"]) != EXPECTED_PROVIDER_METHODS:
+        return _fail(
+            f"mission flow must have {EXPECTED_PROVIDER_METHODS} stages, got {len(surface['provider_methods'])}"
+        )
 
     provider = MissionProvider()
-    assert isinstance(provider, ProviderProtocol), "MissionProvider violates the protocol"
-    assert provider.film == "live_and_let_die"
-
-    from bond_api.protocol import ReconRequest  # noqa: E402
+    if not isinstance(provider, ProviderProtocol):
+        return _fail("MissionProvider does not satisfy the frozen bond_api protocol")
+    if provider.film != FILM:
+        return _fail(f"provider film is {provider.film!r}, expected {FILM!r}")
 
     debrief = run_mission(provider, ReconRequest("preflight verification"))
-    assert debrief.outcome.success, "mission outcome was not successful"
+    if not debrief.outcome.success:
+        return _fail("mission outcome was not successful")
+    if not debrief.lessons:
+        return _fail("debrief produced no lessons")
 
     print(f"bond_api {bond_api.__version__} OK")
     print(f"film {provider.film} · protocol dataclasses: {len(surface['dataclasses'])}")

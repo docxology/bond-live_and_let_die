@@ -14,6 +14,7 @@ from bond_api.protocol import (
 from bond_api.registry import GadgetRegistry
 from bond_api.serialization import from_json, to_json
 
+from live_and_let_die.supply_graph import SAN_MONIQUE_GRAPH, Edge, Node, SupplyGraph
 from live_and_let_die.mission import (
     CODENAME,
     FILM,
@@ -47,10 +48,39 @@ def test_brief_shape() -> None:
     assert brief.codename == CODENAME
 
 
+def test_brief_graph_asset_is_derived_not_literal() -> None:
+    """The supply-graph asset payload must be read off the live graph.
+
+    Binding test for a real defect: the payload used to be the literals
+    ``{"nodes": 7, "edges": 10}``, which would have kept reporting 7/10 after any
+    dataset change. Comparing against a freshly-measured graph — not against 7
+    and 10 — is what makes this test able to fail.
+    """
+    brief = MissionProvider().brief()
+    payload = next(a.payload for a in brief.assets if a.name == "san_monique_supply_graph")
+    assert payload["nodes"] == len(SAN_MONIQUE_GRAPH.node_ids())
+    assert payload["edges"] == len(SAN_MONIQUE_GRAPH.edges())
+    # A literal would not track a differently-sized graph; prove the measurement
+    # itself discriminates by checking it against an independently built graph.
+    other = SupplyGraph(
+        [Node("a", "production", "A", capacity=1.0), Node("b", "market", "B")],
+        [Edge("a", "b", 1.0, 1.0)],
+    )
+    assert (len(other.node_ids()), len(other.edges())) != (payload["nodes"], payload["edges"])
+
+
 def test_recon_shape() -> None:
     report = MissionProvider().recon(ReconRequest("survey the island"))
     assert isinstance(report, ReconReport)
     assert len(report.findings) == 5
+
+
+def test_recon_supply_graph_finding_is_derived() -> None:
+    """The recon graph-size finding interpolates the live graph, never literals."""
+    report = MissionProvider().recon(ReconRequest("survey the island"))
+    detail = next(f.detail for f in report.findings if f.label == "supply_graph")
+    expected = f"{len(SAN_MONIQUE_GRAPH.node_ids())} nodes / {len(SAN_MONIQUE_GRAPH.edges())} legs production-to-market"
+    assert detail == expected
 
 
 def test_plan_shape() -> None:

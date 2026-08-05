@@ -124,7 +124,8 @@ class TerrainGrid:
         candidates = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
         return tuple(c for c in candidates if self.traversable(*c))
 
-    def _entrance_cost(self, current: tuple[int, int], nxt: tuple[int, int]) -> float:
+    def _entrance_cost(self, nxt: tuple[int, int]) -> float:
+        """Cost of *entering* ``nxt`` (terrain cost is a property of the destination)."""
         return self.cost(*nxt)
 
     def plan_route(self, start: tuple[int, int], goal: tuple[int, int]) -> TerrainRoute:
@@ -155,7 +156,7 @@ class TerrainGrid:
             if cell == goal:
                 break
             for nxt in self.neighbors(*cell):
-                new_cost = cost + self._entrance_cost(cell, nxt)
+                new_cost = cost + self._entrance_cost(nxt)
                 if new_cost < dist.get(nxt, float("inf")):
                     dist[nxt] = new_cost
                     prev[nxt] = cell

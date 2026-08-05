@@ -5,9 +5,11 @@ abstract: >-
   PROJECT BOND film package (codename SAN MONIQUE). Deterministic
   special-agent mission software for the narcotics operation of Live and Let
   Die (1973): narcotics supply-graph analytics (max-flow/min-cut bottleneck
-  analysis), voodoo-coded communiqué deciphering (keyword substitution
-  ciphers, frequency analysis), and Caribbean island ops planning over
-  mangrove/crocodile terrain. Implements the BOND-API MissionProvider protocol.
+  analysis), budgeted network interdiction (greedy and exact solvers),
+  voodoo-coded communiqué deciphering (keyword substitution ciphers, frequency
+  analysis), Morse-timed drum-code signalling, farm-gate-to-street market
+  economics, and Caribbean island ops planning over mangrove/crocodile
+  terrain. Implements the BOND-API MissionProvider protocol.
 authors:
   - family-names: Friedman
     given-names: Daniel Ari
@@ -18,8 +20,11 @@ keywords:
   - narcotics-supply-graph
   - max-flow
   - min-cut
+  - network-interdiction
   - substitution-cipher
   - frequency-analysis
+  - drum-code-signalling
+  - drug-price-economics
   - terrain-pathfinding
 license: MIT
 version: 0.1.0

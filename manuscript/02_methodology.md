@@ -42,7 +42,7 @@ throughput. Two solvers are provided:
 ## Coded communiqués: symbol substitution and drum code
 
 The voodoo "symbol substitution" is a monoalphabetic keyword cipher over the
-26-letter alphabet: a keyword (here {{LALD_KEYWORD}}) seeds a reshuffled cipher
+{{LALD_ALPHABET_SIZE}}-letter alphabet: a keyword (here {{LALD_KEYWORD}}) seeds a reshuffled cipher
 alphabet (duplicates dropped, remaining letters appended), and each plaintext
 letter maps to the cipher symbol at its index. To handle an *unkeyed* intercept,
 `solve_substitution` performs a frequency attack: ciphertext symbols are ranked
@@ -51,8 +51,8 @@ expected frequency; the candidate plaintext is scored by cosine similarity of
 its frequency profile against the reference distribution.
 
 Alongside the written cipher, the cult's **drum code** is a Morse-style rhythm
-codec over a per-beat `0/1` grid: dot = 1 sounding beat, dash = 3, intra-letter
-gap 1, inter-letter gap 3, inter-word gap 7. `signal_for_text` encodes any
+codec over a per-beat `0/1` grid, on standard International Morse timing
+({{LALD_DRUM_TIMING}}). `signal_for_text` encodes any
 message onto the beat grid and `decode_signal` recovers it exactly under strict
 run-length validation. `rhythm_signature` / `signature_distance` give a numeric
 traffic signature so two intercepted signals can be compared.
@@ -70,9 +70,8 @@ applies a retail markup and a purity dilution. The headline metric is the
 
 ## Island ops planning
 
-San Monique is discretized as a terrain grid where each cell is a terrain type
-with a movement cost (road/open/beach cost 1, mangrove 3, open water 3, swamp 5,
-crocodile water 7, impassable cliff infinite). Dijkstra over the four cardinal
+San Monique is discretized as a {{LALD_TERRAIN_SHAPE}} terrain grid where each
+cell is a terrain type with a movement cost ({{LALD_TERRAIN_COSTS}}). Dijkstra over the four cardinal
 neighbours finds the lowest-cost route between the landing beach and the
 airfield zone; the planner reports total cost, the path, and the number of
 crocodile-water cells traversed as a hazard metric.

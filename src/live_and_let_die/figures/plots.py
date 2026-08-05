@@ -1,15 +1,18 @@
 """SAN MONIQUE figure rendering (matplotlib, deterministic).
 
-Two publication figures:
+Three publication figures, all rendered by ``scripts/generate_figures.py``:
 
 * :func:`render_supply_graph` — the narcotics supply graph with the cheapest
   production->Miami route and the critical transit bottleneck highlighted.
+* :func:`render_interdiction_curve` — greedy vs exhaustive-optimal throughput
+  reduction across strike budgets.
 * :func:`render_island_route` — the mangrove/crocodile terrain grid with the
   planned infiltration route overlaid.
 
 All output is deterministic and written under ``output/figures/`` (git-ignored,
 regenerable). Figure data is derived from the pure domain modules — no numbers
-are hand-authored here.
+are hand-authored here, and captions interpolate computed values (e.g. the
+bottleneck node name) rather than naming them in a literal.
 """
 
 from __future__ import annotations
@@ -124,7 +127,11 @@ def render_supply_graph(out_path: str | Path | None = None) -> Path:
         label = node_obj.name if not is_critical else f"{node_obj.name}  [bottleneck]"
         ax.text(nx, ny + 0.13, label, fontsize=8, ha="center", color="#17202A")
 
-    ax.set_title("San Monique narcotics supply graph\n(red = cheapest production→Miami route · bottleneck = airfield)")
+    # The bottleneck name is interpolated, never typed: a dataset change must
+    # move the caption with it.
+    ax.set_title(
+        f"San Monique narcotics supply graph\n(red = cheapest production→Miami route · bottleneck = {critical})"
+    )
     ax.set_xlim(-0.4, 3.4)
     ax.set_ylim(-1.0, 1.1)
     ax.axis("off")

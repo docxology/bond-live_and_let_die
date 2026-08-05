@@ -10,8 +10,9 @@ paper:
   version: "0.1.0"
   title: "Live and Let Die: SAN MONIQUE — Special-Agent Mission Software"
   subtitle: >-
-    Narcotics supply-graph analytics, voodoo-coded communiqué deciphering,
-    and Caribbean island ops planning
+    Narcotics supply-graph analytics and budgeted network interdiction,
+    voodoo-coded communiqué and drum-code deciphering, farm-gate-to-street
+    market economics, and Caribbean island ops planning
   keywords:
     - narcotics supply graph
     - max-flow / min-cut bottleneck analysis

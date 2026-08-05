@@ -117,10 +117,12 @@ def decipher_field_communique() -> dict[str, Any]:
 
 
 def run_analysis() -> dict[str, Any]:
-    """Run all three San Monique analyses and merge them into one report dict.
+    """Run every San Monique analysis and merge them into one report dict.
 
-    Deterministic by construction: every sub-analysis is pure and the merged
-    dict is built without any random or wall-clock dependence.
+    Six pure-core analyses are merged under the keys ``supply``, ``comms``,
+    ``ops``, ``interdiction``, ``drums`` and ``market``, plus the provenance
+    ``input_hash``. Deterministic by construction: every sub-analysis is pure
+    and the merged dict is built without any random or wall-clock dependence.
     """
     supply = analyze_san_monique()
     comms = decipher_field_communique()
@@ -191,7 +193,14 @@ class MissionProvider:  # noqa: N801 — name fixed by the discovery contract
                 "plan an infiltration route across crocodile terrain to the airfield",
             ),
             assets=(
-                Asset(kind="dataset", name="san_monique_supply_graph", payload={"nodes": 7, "edges": 10}),
+                Asset(
+                    kind="dataset",
+                    name="san_monique_supply_graph",
+                    payload={
+                        "nodes": len(SAN_MONIQUE_GRAPH.node_ids()),
+                        "edges": len(SAN_MONIQUE_GRAPH.edges()),
+                    },
+                ),
                 Asset(kind="dataset", name="voodoo_communique", payload={"keyword": KEYWORD}),
                 Asset(kind="dataset", name="san_monique_terrain", payload={"rows": len(SAN_MONIQUE_TERRAIN)}),
             ),
@@ -208,7 +217,13 @@ class MissionProvider:  # noqa: N801 — name fixed by the discovery contract
             findings=(
                 Finding(label="goal", detail=request.goal),
                 Finding(label="markets", detail=", ".join(sorted(supply_markets))),
-                Finding(label="supply_graph", detail="7 nodes / 10 legs production-to-market"),
+                Finding(
+                    label="supply_graph",
+                    detail=(
+                        f"{len(SAN_MONIQUE_GRAPH.node_ids())} nodes / "
+                        f"{len(SAN_MONIQUE_GRAPH.edges())} legs production-to-market"
+                    ),
+                ),
                 Finding(label="terrain", detail="crocodile channel walls off the airfield approach"),
                 Finding(label="constraints", detail="deterministic, real-data-only execution"),
             )
@@ -243,7 +258,11 @@ class MissionProvider:  # noqa: N801 — name fixed by the discovery contract
         )
 
     def execute(self, plan: MissionPlan) -> MissionOutcome:
-        """Run all three analyses and return a fully-provenanced outcome."""
+        """Run every domain analysis and return a fully-provenanced outcome.
+
+        The result payload is :func:`run_analysis` (supply, comms, ops,
+        interdiction, drums, market) plus the number of plan steps completed.
+        """
         results = run_analysis()
         results["steps_completed"] = len(plan.steps)
         return MissionOutcome(
