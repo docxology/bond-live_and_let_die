@@ -126,6 +126,17 @@ sections to `output/manuscript/`; strict mode fails on any unresolved token, and
 `tests/test_manuscript_variables.py` fails on any token used in prose that
 `generate_variables()` does not produce.
 
+Regeneration is **byte-identical**: running that script twice on an unchanged
+tree writes the same bytes to `output/data/manuscript_variables.json` and to
+every section under `output/manuscript/`. Every value comes from a committed
+source (the domain core, or `manuscript/config.yaml`) and no module under `src/`
+reads the system clock — the manuscript's `date:` front matter is `paper.date`
+in the config, bumped by hand, not a generation timestamp.
+`tests/test_scripts_smoke.py::test_regeneration_is_byte_identical` runs the
+script twice more than a second apart and diffs the bytes, so the claim fails
+loudly if a clock ever returns. Figures (`output/figures/*.png`) are written by
+a different script and are outside that claim.
+
 All three figures are **embedded** in the results section via
 `![caption]({{LALD_FIGURE_DIR}}/name.png)`. `LALD_FIGURE_DIR` is derived from the
 real `output/figures` and `output/manuscript` paths, so the rendered section

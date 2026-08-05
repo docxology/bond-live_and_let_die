@@ -76,6 +76,16 @@ never by breaking discovery.
 - **Deterministic**: fixed provenance seed 8, no random draws anywhere, zero
   wall-clock in artifacts, canonical SHA-256 input hash covering the graph,
   ciphers, drum message, terrain, route endpoints, and per-leg economics.
+  "Zero wall-clock" is literal and gated: no module under `src/` may call
+  `datetime.now`, `date.today`, or `time.time`, because the manuscript
+  artifacts (`output/data/manuscript_variables.json` and `output/manuscript/`)
+  must regenerate byte-for-byte. The manuscript's publication date is
+  `paper.date` in `manuscript/config.yaml` — a committed value you bump by
+  hand. If you need a real timestamp, it goes in a run-scoped record outside
+  those two paths, and you amend the scope statement in
+  `manuscript/06_reproducibility.md` to say so. Gates:
+  `tests/test_scripts_smoke.py::test_regeneration_is_byte_identical` plus the
+  two determinism tests in `tests/test_manuscript_variables.py`.
 - **No mock framework**: real data and real computation only.
 - **Derive, never type**: any value the code can compute is interpolated —
   including figure captions, `Asset` payloads, and `Finding` details. A literal

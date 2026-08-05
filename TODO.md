@@ -4,9 +4,9 @@
 mission software for Kananga's San Monique narcotics operation, built as six
 stdlib-only domain modules (supply graph, interdiction, ciphers, drum codec,
 market economics, terrain routing) behind the frozen BOND-API `MissionProvider`
-adapter in `src/live_and_let_die/mission.py`. Verified state as of 2026-08-05 at
-commit `b7ccad2`, measured this session: **125 tests passing, 0 failing, 0
-skipped; 97.86% line+branch coverage on `src/`** (1002 statements / 308
+adapter in `src/live_and_let_die/mission.py`. Verified state as of 2026-08-05,
+measured after the manuscript-determinism fix: **130 tests passing, 0 failing, 0
+skipped; 97.89% line+branch coverage on `src/`** (1012 statements / 312
 branches, 11 statements + 17 branches uncovered) against a 90% gate. `ruff
 check`, `ruff format --check`, `mypy src/ scripts/` and
 `scripts/00_preflight.py` all pass. `docs/_generated/COUNTS.md` matches this run
@@ -67,7 +67,17 @@ Deliberate and accepted. Recorded so nobody re-litigates them.
 - **No mock framework anywhere**, including for matplotlib and the subprocess
   CLIs. Real rendering into `tmp_path` is the test.
 - **`wall_time_s` is fixed at `0.0`.** Artifacts must not carry a clock, or the
-  provenance record stops being reproducible.
+  provenance record stops being reproducible. This held for
+  `mission_outcome.json` but was breached in the manuscript path until
+  2026-08-05: `manuscript_variables.py` stamped a `GENERATION_TIMESTAMP` from
+  `datetime.now()` into the abstract's front matter and into
+  `manuscript_variables.json`, so every regeneration wrote different bytes while
+  the docs claimed determinism. The token is now `{{LALD_MANUSCRIPT_DATE}}`,
+  read from the committed `paper.date` in `manuscript/config.yaml`, and three
+  gates bind it — `tests/test_scripts_smoke.py::test_regeneration_is_byte_identical`,
+  `tests/test_manuscript_variables.py::test_regenerating_variables_across_a_wall_clock_second_is_identical`,
+  and a source scan for clock calls under `src/`. The lesson is recorded because
+  the *old* test injected a fixed `now`, which is exactly why it never failed.
 - **`MISSION_SEED = 8` is recorded but never consumed.** There are no random
   draws anywhere; the seed exists for suite parity, and every result is
   deterministic without it.

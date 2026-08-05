@@ -8,6 +8,12 @@ paper:
   codename: "SAN MONIQUE"
   year: 1973
   version: "0.1.0"
+  # Publication date of the manuscript, rendered as the abstract's `date:` front
+  # matter through {{LALD_MANUSCRIPT_DATE}}. Committed on purpose: the rendered
+  # sections and manuscript_variables.json must regenerate byte-for-byte, so
+  # this date is bumped by hand when the manuscript is republished — never
+  # stamped from the system clock. ISO YYYY-MM-DD; anything else fails loudly.
+  date: 2026-08-05
   title: "Live and Let Die: SAN MONIQUE — Special-Agent Mission Software"
   subtitle: >-
     Narcotics supply-graph analytics and budgeted network interdiction,

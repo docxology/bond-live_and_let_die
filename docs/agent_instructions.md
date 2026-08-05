@@ -11,7 +11,11 @@ Operational constraints for AI agents modifying this PROJECT BOND film package.
   your own `MissionProvider` protocol. `src/live_and_let_die/mission.py` is the
   thin adapter; the pure domain core must remain importable without `bond_api`.
 - **Determinism**: fixed seed (8), no untracked RNG, no wall-clock in persisted
-  artifacts. Canonical SHA-256 input hash for auditable provenance.
+  artifacts — no module under `src/` may call `datetime.now`, `date.today`, or
+  `time.time`, because the manuscript artifacts must regenerate byte-for-byte
+  (see `manuscript/06_reproducibility.md` for the exact scope). The manuscript's
+  publication date is the committed `paper.date` in `manuscript/config.yaml`.
+  Canonical SHA-256 input hash for auditable provenance.
 - **No mocks**: no `unittest.mock` / `MagicMock` / `mocker.patch`. Real data and
   computation only.
 - **Pure core**: all six domain modules — `supply_graph.py`, `interdiction.py`,

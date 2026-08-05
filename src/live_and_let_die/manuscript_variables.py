@@ -9,13 +9,24 @@ manuscript cannot drift from the code.
 The consuming orchestrator is ``scripts/z_generate_manuscript_variables.py``
 (thin wrapper); the live cross-reference gate lives in
 ``tests/test_manuscript_variables.py``.
+
+**No wall clock.** Everything this module emits is persisted — into
+``output/data/manuscript_variables.json`` and every resolved section under
+``output/manuscript/`` — and those bytes are covered by the byte-identical
+regeneration claim in ``manuscript/06_reproducibility.md``. So every value here
+comes from a committed source: the domain core, or ``manuscript/config.yaml``.
+The manuscript date is ``paper.date`` in that config, never ``datetime.now``.
+Until 2026-08-05 this module stamped ``GENERATION_TIMESTAMP`` from the system
+clock, which made every regeneration differ; the gates are
+``tests/test_manuscript_variables.py::test_regenerating_variables_across_a_wall_clock_second_is_identical``
+and ``tests/test_scripts_smoke.py::test_regeneration_is_byte_identical``.
 """
 
 from __future__ import annotations
 
 import os
 import re
-from datetime import datetime, timezone
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -116,19 +127,43 @@ def _mission_objectives(config: dict[str, Any]) -> list[str]:
     return [str(item) for item in objectives]
 
 
+def _manuscript_date(paper: dict[str, Any]) -> str:
+    """The manuscript's publication date, read from the committed ``paper`` block.
+
+    Deliberately *not* a wall clock. This value is written into
+    ``output/data/manuscript_variables.json`` and into the resolved abstract's
+    front matter, both of which the reproducibility section claims regenerate
+    byte-for-byte — so it must come from a source that is committed and does
+    not move between runs. ``paper.date`` in ``manuscript/config.yaml`` is that
+    source; it is required, because a silent default would put an
+    unprovenanced date on the manuscript.
+    """
+    raw = paper.get("date")
+    if raw is None:
+        raise ValueError("manuscript config 'paper.date' is required — a committed ISO date, e.g. 2026-08-05")
+    if isinstance(raw, date):  # YAML parses a bare ``2026-08-05`` into a date
+        return raw.isoformat()
+    try:
+        return date.fromisoformat(str(raw).strip()).isoformat()
+    except ValueError as exc:
+        raise ValueError(f"manuscript config 'paper.date' must be an ISO date (YYYY-MM-DD), got {raw!r}") from exc
+
+
 def generate_variables(
     *,
     config_path: str | Path | None = None,
     require_outputs: bool = True,
-    now: datetime | None = None,
 ) -> dict[str, str]:
     """Compute the ``{{TOKEN}}`` -> value mapping for the manuscript.
+
+    The mapping is a pure function of committed inputs (the domain core plus
+    ``manuscript/config.yaml``): calling it twice, any distance apart in time,
+    returns an equal dict. Nothing here reads the system clock.
 
     Args:
         config_path: Override for ``manuscript/config.yaml``.
         require_outputs: When True (default), require the analysis report to
             populate — the strict-mode gate.
-        now: Optional timestamp override for deterministic tests.
     """
     config = load_manuscript_config(config_path)
     paper = config.get("paper", {})
@@ -145,7 +180,7 @@ def generate_variables(
     if require_outputs and not supply:
         raise ValueError("supply analysis produced no output — cannot hydrate manuscript")
 
-    stamp = (now or datetime.now(timezone.utc)).astimezone(timezone.utc).isoformat(timespec="seconds")
+    manuscript_date = _manuscript_date(paper)
     greedy = interdict["greedy"]
     exact = interdict["exact"]
     top_target = interdict["efficiency_ranking"][0]
@@ -233,7 +268,7 @@ def generate_variables(
         "LALD_ROUTE_START": f"({ops['start'][0]},{ops['start'][1]})",
         "LALD_ROUTE_GOAL": f"({ops['goal'][0]},{ops['goal'][1]})",
         "LALD_INPUT_HASH": input_digest()[:16],
-        "GENERATION_TIMESTAMP": stamp,
+        "LALD_MANUSCRIPT_DATE": manuscript_date,
     }
 
 

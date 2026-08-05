@@ -38,8 +38,8 @@ Determinism is maintained by:
 - deterministic tie-breaking in every search (`(cost, node_id)` and
   `(cost, row, col)` heap keys; sorted adjacency; sorted severable-leg order);
 - no random draws anywhere and no wall-clock value in any persisted artifact
-  (`Provenance.wall_time_s` is fixed at `0.0`, and `generate_variables` takes a
-  `now=` override so timestamp handling itself is testable);
+  (`Provenance.wall_time_s` is fixed at `0.0`, and no module under `src/` calls
+  `datetime.now`, `date.today`, or `time.time` at all);
 - provenance seed `MISSION_SEED = 8` recorded for suite parity.
 
 ## What each test file binds
@@ -53,9 +53,9 @@ Determinism is maintained by:
 | `test_market_flow.py` | Price and purity propagation, revenue aggregation, the missing-leg-economics `ValueError` path, and that `EDGE_ECONOMICS` covers exactly the canonical legs. The producer share is bound by *mechanism*, not by a band: the model is re-run on substituted parameter sets (neutral markups, doubled markups, doubled farm gate) and the share must move exactly as the path structure predicts. A band like `0.01 < share < 0.05` on hand-tuned constants is green by construction and was removed |
 | `test_island_ops.py` | Grid validation, route cost and path, crocodile exposure, and out-of-bounds / untraversable / unreachable errors. Separately, `min_crocodile_exposure` — the lower bound over the whole route space that licenses the manuscript's universal claim — with a positive control (a crocodile shortcut beside a crocodile-free detour) where the cheapest route's exposure and the true minimum differ |
 | `test_mission.py` | The full `MissionProvider` lifecycle, protocol conformance, provenance stability, gadget registration, and that brief/recon report values **derived** from the live graph rather than literals |
-| `test_manuscript_variables.py` | The live cross-reference gate: every `{{TOKEN}}` used in `manuscript/[0-9]*.md` resolves through `generate_variables()`, strict-mode failure on unknown tokens, and hydration determinism. Plus the figure-embed gate: figures are rendered, the manuscript is resolved into an `output/`-shaped tree, and every `![](...)` path is opened — a manuscript that only *mentions* its figures fails |
+| `test_manuscript_variables.py` | The live cross-reference gate: every `{{TOKEN}}` used in `manuscript/[0-9]*.md` resolves through `generate_variables()`, strict-mode failure on unknown tokens, and hydration determinism — two hydrations separated by a real wall-clock second must be equal, which is what the earlier fixed-`now=` test could not catch. Plus the figure-embed gate: figures are rendered, the manuscript is resolved into an `output/`-shaped tree, and every `![](...)` path is opened — a manuscript that only *mentions* its figures fails |
 | `test_figures.py` | That all three figures render to non-empty files, at a custom path and at the default output directory |
-| `test_scripts_smoke.py` | Every thin CLI runs as a subprocess with exit code 0 and writes the artifacts it claims to |
+| `test_scripts_smoke.py` | Every thin CLI runs as a subprocess with exit code 0 and writes the artifacts it claims to. Also the byte-identical regeneration gate: `z_generate_manuscript_variables.py` is run twice, more than a wall-clock second apart, and the persisted bytes must match exactly |
 
 ## The gate
 

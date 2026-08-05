@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
+import time
 from pathlib import Path
 
 import pytest
@@ -132,46 +132,105 @@ def test_num_objectives_reads_the_config_not_a_literal(tmp_path: Path) -> None:
     # "3" would survive this and is exactly what this test rejects.
     cfg = tmp_path / "config.yaml"
     cfg.write_text(
-        "paper:\n  identity: X\nmission:\n  objectives:\n    - one\n    - two\n",
+        "paper:\n  identity: X\n  date: 2026-08-05\nmission:\n  objectives:\n    - one\n    - two\n",
         encoding="utf-8",
     )
     assert generate_variables(config_path=cfg)["LALD_NUM_OBJECTIVES"] == "2"
 
 
 def test_malformed_mission_section_is_rejected(tmp_path: Path) -> None:
+    # ``paper.date`` is supplied so the raise under test is the mission one and
+    # not an earlier missing-date failure wearing the same exception type.
     bad_mission = tmp_path / "bad_mission.yaml"
-    bad_mission.write_text("paper: {}\nmission: not-a-mapping\n", encoding="utf-8")
-    with pytest.raises(ValueError):
+    bad_mission.write_text("paper:\n  date: 2026-08-05\nmission: not-a-mapping\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="mission"):
         generate_variables(config_path=bad_mission)
 
     bad_objectives = tmp_path / "bad_objectives.yaml"
-    bad_objectives.write_text("paper: {}\nmission:\n  objectives: nope\n", encoding="utf-8")
-    with pytest.raises(ValueError):
+    bad_objectives.write_text("paper:\n  date: 2026-08-05\nmission:\n  objectives: nope\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="objectives"):
         generate_variables(config_path=bad_objectives)
 
 
 def test_generate_variables_requires_paper_section(tmp_path: Path) -> None:
-    cfg = tmp_path / "config.yaml"
-    cfg.write_text("mission: {}\n", encoding="utf-8")
-    # Missing paper defaults to {}; a non-dict paper, however, must fail.
     bad = tmp_path / "bad_paper.yaml"
     bad.write_text("paper: not-a-mapping\n", encoding="utf-8")
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="'paper' section"):
         generate_variables(config_path=bad)
 
 
-def test_generate_variables_deterministic_with_now(tmp_path: Path) -> None:
+def test_manuscript_date_comes_from_committed_config() -> None:
+    """The abstract's date is read from ``config.yaml``, not stamped from a clock.
+
+    Bound both ways: the live value must equal the committed one, and a config
+    carrying a different date must move the token. A ``datetime.now()`` stamp
+    fails the equality; a hardcoded literal fails the substitution.
+    """
+    committed = load_manuscript_config()["paper"]["date"]
+    assert generate_variables()["LALD_MANUSCRIPT_DATE"] == str(committed)
+
+
+def test_manuscript_date_tracks_the_config_value(tmp_path: Path) -> None:
     cfg = tmp_path / "config.yaml"
-    # Minimal valid config (only the paper tokens we consult).
-    cfg.write_text(
-        "paper:\n  identity: X\n  codename: Y\n  year: 1973\n  version: v\n  title: T\n  subtitle: S\n",
-        encoding="utf-8",
-    )
-    stamp = datetime(2026, 8, 4, 12, 0, 0, tzinfo=timezone.utc)
-    v1 = generate_variables(config_path=cfg, now=stamp)
-    v2 = generate_variables(config_path=cfg, now=stamp)
-    assert v1 == v2
-    assert v1["GENERATION_TIMESTAMP"] == "2026-08-04T12:00:00+00:00"
+    cfg.write_text("paper:\n  identity: X\n  date: 1973-06-27\n", encoding="utf-8")
+    assert generate_variables(config_path=cfg)["LALD_MANUSCRIPT_DATE"] == "1973-06-27"
+
+    quoted = tmp_path / "quoted.yaml"
+    quoted.write_text('paper:\n  identity: X\n  date: "1973-06-27"\n', encoding="utf-8")
+    assert generate_variables(config_path=quoted)["LALD_MANUSCRIPT_DATE"] == "1973-06-27"
+
+
+def test_missing_or_malformed_manuscript_date_fails_loudly(tmp_path: Path) -> None:
+    """No silent default: an absent or non-ISO date must stop the render.
+
+    A fallback here would put an unprovenanced date on the manuscript, and a
+    ``datetime.now()`` fallback would silently restore the non-determinism this
+    token was changed to remove.
+    """
+    missing = tmp_path / "missing.yaml"
+    missing.write_text("paper:\n  identity: X\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="paper.date' is required"):
+        generate_variables(config_path=missing)
+
+    malformed = tmp_path / "malformed.yaml"
+    malformed.write_text('paper:\n  identity: X\n  date: "last Tuesday"\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="must be an ISO date"):
+        generate_variables(config_path=malformed)
+
+
+def test_regenerating_variables_across_a_wall_clock_second_is_identical() -> None:
+    """Two hydrations more than a second apart must produce an equal mapping.
+
+    This is the in-process half of the byte-identical regeneration claim, and
+    the sleep is the whole point: the previous ``GENERATION_TIMESTAMP`` was
+    stamped at second resolution, so two back-to-back calls landed in the same
+    second and compared equal. That is why the old fixed-``now`` test never
+    caught it. Reintroduce ``datetime.now()`` in ``generate_variables`` and this
+    test goes red.
+    """
+    first = generate_variables()
+    time.sleep(1.1)
+    second = generate_variables()
+    assert first == second
+    differing = sorted(key for key in first if first[key] != second.get(key))
+    assert not differing, f"values moved between runs: {differing}"
+
+
+def test_no_module_under_src_reads_the_wall_clock() -> None:
+    """Belt to the determinism test's braces: no clock call anywhere in ``src/``.
+
+    Lexical, so it cannot prove determinism on its own — the two regeneration
+    tests do that. It exists to name the failure mode at the point a clock is
+    first typed, rather than as a puzzling hash mismatch later.
+    """
+    banned = ("datetime.now(", "datetime.utcnow(", "date.today(", "time.time(", "time.monotonic(")
+    offenders: list[str] = []
+    for module in sorted((PACKAGE_ROOT / "src").rglob("*.py")):
+        text = module.read_text(encoding="utf-8")
+        for needle in banned:
+            if needle in text:
+                offenders.append(f"{module.relative_to(PACKAGE_ROOT)}: {needle}")
+    assert not offenders, f"wall-clock call in a package that claims zero wall-clock artifacts: {offenders}"
 
 
 def test_all_prose_tokens_resolve() -> None:

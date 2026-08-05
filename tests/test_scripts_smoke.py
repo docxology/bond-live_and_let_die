@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 PACKAGE_ROOT = Path(__file__).resolve().parent.parent
@@ -78,6 +79,50 @@ def test_z_generate_manuscript_variables_strict() -> None:
     assert data.is_file() and data.stat().st_size > 0
     resolved = PACKAGE_ROOT / "output" / "manuscript"
     assert len(list(resolved.glob("*.md"))) >= 1
+
+
+def _generated_artifact_bytes() -> dict[str, bytes]:
+    """Every persisted artifact the byte-identical regeneration claim covers.
+
+    That is the hydrated variable table plus every resolved manuscript section
+    — the exact files ``z_generate_manuscript_variables.py`` writes. Figures
+    (PNG) are rendered by a different script and are not in scope here.
+    """
+    data = PACKAGE_ROOT / "output" / "data" / "manuscript_variables.json"
+    manuscript = PACKAGE_ROOT / "output" / "manuscript"
+    artifacts = {"data/manuscript_variables.json": data.read_bytes()}
+    for section in sorted(manuscript.glob("*.md")):
+        artifacts[f"manuscript/{section.name}"] = section.read_bytes()
+    return artifacts
+
+
+def test_regeneration_is_byte_identical() -> None:
+    """The documented regeneration command must reproduce its own output exactly.
+
+    ``README.md`` and ``manuscript/06_reproducibility.md`` claim the manuscript
+    artifacts regenerate byte-for-byte from the committed tree. This runs the
+    real script twice and diffs the persisted bytes, so the claim is bound to
+    behaviour rather than to a fixed value injected by a test.
+
+    The sleep is load-bearing. The wall-clock stamp this package used to emit
+    had one-second resolution, so two back-to-back runs produced identical
+    bytes by luck and the breach survived a green suite. Crossing a second
+    boundary is what makes the test able to fail.
+    """
+    first = _run("z_generate_manuscript_variables.py")
+    assert first.returncode == 0, first.stderr
+    before = _generated_artifact_bytes()
+    assert len(before) > 1, "nothing was regenerated — the comparison would be vacuous"
+
+    time.sleep(1.1)
+
+    second = _run("z_generate_manuscript_variables.py")
+    assert second.returncode == 0, second.stderr
+    after = _generated_artifact_bytes()
+
+    assert sorted(after) == sorted(before), "the two runs wrote different files"
+    differing = sorted(name for name in before if before[name] != after[name])
+    assert not differing, f"regeneration is not byte-identical: {differing}"
 
 
 def test_scripts_are_mockfree() -> None:

@@ -1,6 +1,6 @@
 ---
 title: "{{LALD_TITLE}}"
-date: "{{GENERATION_TIMESTAMP}}"
+date: "{{LALD_MANUSCRIPT_DATE}}"
 ---
 
 # Abstract

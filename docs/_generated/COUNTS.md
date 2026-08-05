@@ -13,12 +13,12 @@ uv run pytest tests/ --cov=src --cov-fail-under=90
 
 | Metric | Value |
 | --- | --- |
-| Tests passing | 125 |
+| Tests passing | 130 |
 | Tests failing | 0 |
 | Tests skipped | 0 |
-| Line + branch coverage on `src/` | 97.86% |
+| Line + branch coverage on `src/` | 97.89% |
 | Coverage gate (`--cov-fail-under`) | 90% |
-| Statements / branches | 1002 / 308 |
+| Statements / branches | 1012 / 312 |
 | ruff check + ruff format --check | clean on `src/`, `scripts/`, `tests/` |
 | mypy | clean (11 source files under `src/`) |
 
@@ -30,7 +30,7 @@ uv run pytest tests/ --cov=src --cov-fail-under=90
 | `src/live_and_let_die/figures/plots.py` | 100.00% |
 | `src/live_and_let_die/interdiction.py` | 97.89% |
 | `src/live_and_let_die/island_ops.py` | 95.81% |
-| `src/live_and_let_die/manuscript_variables.py` | 97.37% |
+| `src/live_and_let_die/manuscript_variables.py` | 97.66% |
 | `src/live_and_let_die/market_flow.py` | 98.41% |
 | `src/live_and_let_die/mission.py` | 100.00% |
 | `src/live_and_let_die/supply_graph.py` | 98.35% |
