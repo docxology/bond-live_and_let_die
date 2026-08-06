@@ -260,6 +260,11 @@ def generate_variables(
         "LALD_SPREAD_RATIO": f"{market['spread_ratio']:.0f}",
         "LALD_TOTAL_REVENUE": f"{market['total_revenue']:.0f}",
         "LALD_MARKET_COUNT": str(len(markets)),
+        "LALD_MIAMI_REVENUE": f"{market['markets']['miami']['revenue']:.0f}",
+        "LALD_NYC_REVENUE": f"{market['markets']['new_york']['revenue']:.0f}",
+        "LALD_MIAMI_DEMAND": f"{market['markets']['miami']['demand']:.0f}",
+        "LALD_NYC_DEMAND": f"{market['markets']['new_york']['demand']:.0f}",
+        "LALD_TOTAL_DEMAND": f"{market['markets']['miami']['demand'] + market['markets']['new_york']['demand']:.0f}",
         # Ops
         "LALD_ROUTE_COST": f"{ops['route_cost']:.0f}",
         "LALD_CROCODILE_CELLS": str(ops["crocodile_cells"]),

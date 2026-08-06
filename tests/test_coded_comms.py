@@ -8,7 +8,7 @@ from live_and_let_die.coded_comms import (
     ALPHABET,
     ENGLISH_FREQUENCIES,
     KEYWORD,
-    SAN_MONIQUE_MESSAGE,
+    san_monique_message,
     SAN_MONIQUE_PLAINTEXT,
     build_keyword_key,
     decipher,
@@ -136,9 +136,27 @@ def test_symbol_roster_bijective() -> None:
     assert len(set(roster.values())) == 26
 
 
-def test_san_monique_message_constant() -> None:
-    plaintext, ciphertext = SAN_MONIQUE_MESSAGE()
+def test_san_monique_message_is_a_named_function() -> None:
+    plaintext, ciphertext = san_monique_message()
     assert plaintext == SAN_MONIQUE_PLAINTEXT
     assert ciphertext == "HBKBKDB INTS TEN SKBHN AFTN"
     assert KEYWORD == "BARON"
     assert ENGLISH_FREQUENCIES["E"] == pytest.approx(12.702)
+
+
+def test_symbol_roster_rejects_non_bijective_alphabet() -> None:
+    """Two alphabet positions mapped to one glyph must fail loudly.
+
+    Without the bijectivity guard a lossy glyph roster would silently make
+    decoding ambiguous. ``AA`` maps both A's positions to the same glyph, so the
+    guard must fire rather than return a lossy mapping.
+    """
+    with pytest.raises(ValueError, match="not bijective"):
+        symbol_roster("AA")
+
+
+def test_normalized_frequencies_of_empty_counts_is_empty() -> None:
+    """Zero denominator must not produce a NaN/inf frequency vector."""
+    from live_and_let_die.coded_comms import _normalized_frequencies
+
+    assert _normalized_frequencies({}) == {}

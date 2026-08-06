@@ -81,8 +81,6 @@ def encode_morse(text: str) -> list[list[str]]:
     """Map a message to a nested morse structure: words -> letters -> symbols."""
     words: list[list[str]] = []
     for word in text.split():
-        if not word:
-            continue
         letters: list[str] = []
         for ch in word.upper():
             if ch not in MORSE:

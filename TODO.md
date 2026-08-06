@@ -142,3 +142,55 @@ code, then re-run the gates:
 uv run python scripts/generate_figures.py
 uv run python scripts/z_generate_manuscript_variables.py
 ```
+
+
+--------------------------------------------------------------------------------
+
+## Round-2 (2026-08-06)
+
+Round-2 improvement pass. Baselines before: 130 tests passing, 0 skipped,
+97.89% line+branch coverage on `src/` (gate 90%), ruff check / format --check /
+mypy / 00_preflight all green. After: **139 tests passing, 0 skipped, 98.64%
+coverage; all gates green** (ruff, format, mypy, preflight, zero
+`template[_]code_project`).
+
+### Findings & fixes (with test evidence)
+
+| # | Finding | Fix | Test evidence |
+| --- | --- | --- | --- |
+| F1 | `InterdictionPlan.cost_effectiveness()` divided by the *requested* `budget`, not the number of legs actually severed. With `budget` above the severable set the pre-fix code reported CE = 220/12 = 18.33 while posting 10 severed legs — the per-leg metric was silently understated whenever `budget` exceeded the effective strike count. | Divide by `len(self.severed)` (0 when nothing severed). Docstring updated to state the metric is per *actually severed* leg. | `test_cost_effectiveness_uses_severed_count_not_budget` (budget=12, 3 severed → CE = 220/3); canonical budget=3 is unchanged (still 73.3). |
+| F2 | `greedy_interdiction` kept severing legs *after* the operation had collapsed. Simulating budget > severable set, the old code severed all 10 legs (many contributing 0 marginal reduction) to reach the same 220 reduction that 3 legs achieve — wasteful, and it polluted the `severed` list / cost-effectiveness. | Greedy now records the reduction already achieved and stops when every remaining leg adds `<= _EPS` marginal reduction (the network is at its floor). | `test_greedy_stops_when_operation_has_collapsed`: budget=10 severs exactly 3 legs, reduction stays 220, remaining_flow 0. |
+| F3 | `coded_comms.SAN_MONIQUE_MESSAGE` was a function wearing a SCREAMING_CASE constant name (TODO C1). Production never calls it; only the test did. | Renamed to `san_monique_message()`; `__all__` and the test updated. No SCREAMING_CASE callable remains in `coded_comms.__all__`. | `test_san_monique_message_is_a_named_function`; `uv run python -c "…print([n for n in __all__ if n.isupper() and callable(…)])"` → `[]`. |
+| F4 | `encode_morse` carried an unreachable `if not word: continue` (TODO C3): `str.split()` never yields an empty word. | Removed the dead guard. | module coverage rises to 98.82%, no missing lines from that guard. |
+
+### New guard / branch coverage (TODO V-items closed)
+
+| # | Item | Evidence |
+| --- | --- | --- |
+| G1 | **V4** — `symbol_roster` bijectivity guard now fires: `symbol_roster("AA")` raises `ValueError`. `_normalized_frequencies({})` returns `{}` (no NaN/inf). | `test_symbol_roster_rejects_non_bijective_alphabet`, `test_normalized_frequencies_of_empty_counts_is_empty`. `coded_comms.py` now **100%** line+branch. |
+| G2 | **V3** — a traversable-goal-walled-off-by-impassable-terrain grid now drives the heap-drain `plan_route` error path. | `test_plan_route_unreachable_traversable_goal`. |
+| G3 | **V1** — a fixture graph whose min cut falls on a *physical* leg exercises the `transit-limited` reporting branch (no canonical input reaches it). | `test_physical_min_cut_reports_transit_limited` (physical cut `a→m`, cut value 5). |
+| G4 | **V6** — Dijkstra stale-heap guard fires on a cheaper re-route; Edmonds-Karp zero-capacity edge handled. | `test_dijkstra_rejects_stale_heap_entry_via_cheaper_reroute`, `test_max_flow_handles_zero_capacity_edge`. |
+| G5 | **dedupe** — `_sorted_severable` collapses duplicate severable legs. | `test_severable_dedupes_duplicate_legs`. |
+
+### Manuscript improvements
+
+- **`manuscript/03_results.md`** — added a per-market street-price economics table
+  (street price, street purity, demand, revenue per market) fully bound to
+  `{{TOKEN}}`s. New tokens `LALD_MIAMI_REVENUE`, `LALD_NYC_REVENUE`,
+  `LALD_MIAMI_DEMAND`, `LALD_NYC_DEMAND`, `LALD_TOTAL_DEMAND` are computed from
+  `market_flow_report()` and the committed `SAN_MONIQUE_DEMAND`, so no value is
+  hand-authored. Every table cell resolves through `generate_variables()`.
+- **`manuscript/07_scope_and_related_work.md`** — added a "Limitations and
+  uncertainty" section: exact-but-not-accurate framing for the supply capacities,
+  economic parameters (sensitivity, not a confidence interval), greedy-vs-optimal
+  optimality as instance evidence not a general bound, and the structural
+  (topology-dependent) nature of the crocodile-exposure claim.
+
+### Notes for a future round
+
+- C2 (dead `require_outputs` guard + param in `manuscript_variables.py`) and V2
+  (stale-heap `continue` in the two `island_ops` Dijkstra loops) are still open.
+- `docs/_generated/COUNTS.md` was updated by hand from real measured runs (139 /
+  98.64%); it is still not produced by a generator script (TODO D1 remains).
+- E1/E2/E3 unchanged (fleet / bond-root owned).

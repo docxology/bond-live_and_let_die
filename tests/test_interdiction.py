@@ -125,3 +125,54 @@ def test_sever_edges_rebuilds_valid_graph() -> None:
     # had mutated the shared graph).
     assert SAN_MONIQUE_GRAPH.max_flow("poppy_fields", "miami") == pytest.approx(220.0)
     assert len(SAN_MONIQUE_GRAPH.edges()) == 10
+
+
+def test_greedy_stops_when_operation_has_collapsed() -> None:
+    """Greedy must not sever zero-gain legs after the flow has hit its floor.
+
+    The pre-round-2 implementation spent the whole budget severing legs that
+    added zero marginal reduction once the network collapsed, so
+    ``greedy_interdiction(..., budget=10)`` reported 10 severed legs producing
+    the same 220 reduction that 3 achieve. A budget larger than the number of
+    effective strikes must not be consumed on pointless legs.
+    """
+    graph = canonical_flow_graph()
+    plan = greedy_interdiction(graph, SUPER_SOURCE, SUPER_SINK, 10, SEVERABLE)
+    assert plan.reduction == pytest.approx(220.0)
+    assert len(plan.severed) == 3  # only the legs that actually reduce flow
+    assert plan.remaining_flow == pytest.approx(0.0)
+    # cost-effectiveness is per severed leg, not per allocated budget.
+    assert plan.cost_effectiveness() == pytest.approx(220.0 / 3.0)
+
+
+def test_cost_effectiveness_uses_severed_count_not_budget() -> None:
+    """CE is throughput reduction per actually-severed leg.
+
+    With a budget far above the severable set the pre-fix implementation divided
+    by the requested budget (12) instead of the number of legs severed (3),
+    understating the per-leg value by 4x.
+    """
+    graph = canonical_flow_graph()
+    plan = greedy_interdiction(graph, SUPER_SOURCE, SUPER_SINK, 12, SEVERABLE)
+    assert len(plan.severed) == 3
+    assert plan.cost_effectiveness() == pytest.approx(plan.reduction / len(plan.severed))
+
+
+def test_severable_dedupes_duplicate_legs() -> None:
+    """A leg listed twice in ``severable`` is severed once (dedupe guard).
+
+    The ``_sorted_severable`` helper must collapse duplicates so the solver never
+    treats the same leg as two distinct strikes.
+    """
+    from live_and_let_die.interdiction import _sorted_severable
+
+    nodes = [
+        Node("s", "production", "S"),
+        Node("a", "transit", "A"),
+        Node("m", "market", "M"),
+    ]
+    graph = SupplyGraph(
+        nodes,
+        [Edge("s", "a", 1.0, 10.0), Edge("a", "m", 1.0, 10.0)],
+    )
+    assert _sorted_severable(graph, [("s", "a"), ("s", "a"), ("a", "m")]) == (("a", "m"), ("s", "a"))

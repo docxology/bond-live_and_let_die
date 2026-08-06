@@ -65,9 +65,25 @@ New York. The demand-weighted average street price is {{LALD_AVG_STREET_PRICE}}
 $/kg — a {{LALD_SPREAD_RATIO}}× farm-gate-to-street spread — and the farm-gate
 producer retains **{{LALD_PRODUCER_SHARE}}** of the street value. Across
 {{LALD_MARKET_COUNT}} markets the operation grosses about
-{{LALD_TOTAL_REVENUE}} $. These are outputs of invented parameters, not
-measurements: they establish that multiplicative per-leg markups compress the
-producer's share, and nothing about the size of that share in any real market.
+{{LALD_TOTAL_REVENUE}} $.
+
+| Market | Street price ($/kg) | Street purity | Demand | Revenue ($) |
+| --- | --- | --- | --- | --- |
+| Miami | {{LALD_MIAMI_STREET_PRICE}} | {{LALD_MIAMI_STREET_PURITY}} | {{LALD_MIAMI_DEMAND}} | {{LALD_MIAMI_REVENUE}} |
+| New York | {{LALD_NYC_STREET_PRICE}} | {{LALD_NYC_STREET_PURITY}} | {{LALD_NYC_DEMAND}} | {{LALD_NYC_REVENUE}} |
+| **Total** | — | — | {{LALD_TOTAL_DEMAND}} | **{{LALD_TOTAL_REVENUE}}** |
+
+The demand figures in the table come from the same committed
+`SAN_MONIQUE_DEMAND` dataset that caps the supply-graph flow, so the revenue
+section and the throughput section share one source of truth. Every row is
+computed by `market_flow_report()` — no value is hand-authored.
+
+These are outputs of invented parameters, not measurements: they establish that
+multiplicative per-leg markups compress the producer's share, and nothing about
+the size of that share in any real market (see §Scope). The 1.7% producer share
+is the reciprocal of the product of chosen markups, so it tracks any change in
+those assumptions exactly — a sensitivity the test suite re-runs rather than
+reports as a fixed interval.
 
 ## Infiltration route
 

@@ -154,3 +154,16 @@ def test_deterministic_routes() -> None:
     r1 = grid.plan_route(ROUTE_START, ROUTE_GOAL)
     r2 = grid.plan_route(ROUTE_START, ROUTE_GOAL)
     assert r1 == r2
+
+
+def test_plan_route_unreachable_traversable_goal() -> None:
+    """A traversable goal walled off by impassable terrain drains the heap.
+
+    The existing unreachable test seals the goal *inside* impassable terrain,
+    so it raises the "goal is not traversable" guard at entry. This variant
+    covers the heap-drain path: start and goal are both traversable, but no
+    four-neighbour path connects them.
+    """
+    grid = TerrainGrid(("XXO", "XOX", "OOX"))  # (2,0) and (0,2) both O, disconnected
+    with pytest.raises(ValueError):
+        grid.plan_route((2, 0), (0, 2))

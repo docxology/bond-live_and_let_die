@@ -13,12 +13,12 @@ uv run pytest tests/ --cov=src --cov-fail-under=90
 
 | Metric | Value |
 | --- | --- |
-| Tests passing | 130 |
+| Tests passing | 139 |
 | Tests failing | 0 |
 | Tests skipped | 0 |
-| Line + branch coverage on `src/` | 97.89% |
+| Line + branch coverage on `src/` | 98.64% |
 | Coverage gate (`--cov-fail-under`) | 90% |
-| Statements / branches | 1012 / 312 |
+| Statements / branches | 1013 / 312 |
 | ruff check + ruff format --check | clean on `src/`, `scripts/`, `tests/` |
 | mypy | clean (11 source files under `src/`) |
 
@@ -26,15 +26,15 @@ uv run pytest tests/ --cov=src --cov-fail-under=90
 
 | Module | Coverage |
 | --- | --- |
-| `src/live_and_let_die/coded_comms.py` | 96.49% |
+| `src/live_and_let_die/coded_comms.py` | 100.00% |
 | `src/live_and_let_die/figures/plots.py` | 100.00% |
-| `src/live_and_let_die/interdiction.py` | 97.89% |
-| `src/live_and_let_die/island_ops.py` | 95.81% |
+| `src/live_and_let_die/interdiction.py` | 98.64% |
+| `src/live_and_let_die/island_ops.py` | 97.60% |
 | `src/live_and_let_die/manuscript_variables.py` | 97.66% |
 | `src/live_and_let_die/market_flow.py` | 98.41% |
 | `src/live_and_let_die/mission.py` | 100.00% |
 | `src/live_and_let_die/supply_graph.py` | 98.35% |
-| `src/live_and_let_die/voodoo_drums.py` | 97.70% |
+| `src/live_and_let_die/voodoo_drums.py` | 98.82% |
 
 ## Canonical deterministic findings
 
@@ -58,7 +58,7 @@ uv run pytest tests/ --cov=src --cov-fail-under=90
 | Metric | Value |
 | --- | --- |
 | Numbered sections hydrated in strict mode | 9 |
-| Manuscript tokens produced by `generate_variables()` | 71 |
+| Manuscript tokens produced by `generate_variables()` | 75 |
 | Unresolved tokens | 0 |
 | Figures rendered by `scripts/generate_figures.py` | 3 |
 | Figures embedded in the rendered manuscript | 3 |

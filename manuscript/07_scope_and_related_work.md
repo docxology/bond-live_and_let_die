@@ -40,3 +40,44 @@ The novel contribution is not the algorithms but their unification:
 as {{LALD_GADGET_COUNT}} named gadgets, one frozen mission protocol, one
 provenance chain — reproducible end to end with no mocks and no external
 services.
+
+
+## Limitations and uncertainty
+
+The analytical machinery is exact and deterministic (integer-capacity graphs,
+closed-form economics, fixed terrain), so it carries no sampling error — but
+that precision is not accuracy. Every headline number in §Results inherits the
+uncertainty of the *inputs* it is computed from, which are assumptions, not
+measurements:
+
+- **Supply-graph capacities, crop ceilings, and demand ceilings** are invented
+  scale figures for the fictional scenario. The throughput ({{LALD_MAX_FLOW}})
+  and disruption ({{LALD_DISRUPTION}}) figures are exact arithmetic on those
+  chosen numbers; changing any capacity changes both. The analysis establishes
+  *structure* — the network is demand-limited, hinges on one transit asset —
+  not a measured magnitude.
+- **Economic parameters** (farm-gate price, retail markup/dilution, all ten
+  per-leg markup/dilution pairs) are invented. The producer share
+  ({{LALD_PRODUCER_SHARE}}) and the price spread ({{LALD_SPREAD_RATIO}}×) are
+  the exact reciprocals of chosen products of markups; re-run the model under
+  different parameters and they move exactly as the assumptions dictate. The
+  test suite binds this as sensitivity, not as a confidence interval, because
+  there is no sampling distribution to quantify — only the chosen inputs.
+- **Interdiction** greedy-vs-optimal: the greedy and exhaustive solvers agree
+  at {{LALD_BUDGET}}-leg reduction here ({{LALD_GREEDY_REDUCTION}} /
+  {{LALD_EXACT_REDUCTION}}), but greedy is a heuristic and its optimality is
+  *not* guaranteed in general. On this instance the exhaustive optimum
+  confirms the greedy plan is exact — that is evidence for this graph, not a
+  general bound.
+- **Terrain costs** are unit figures chosen for the scenario; the route cost
+  ({{LALD_ROUTE_COST}}) and crocodile exposure ({{LALD_CROCODILE_CELLS}}) are
+  exact on those costs. The universal claim (any route wades at least
+  {{LALD_MIN_CROCODILE_CELLS}}) is a structural fact of the committed grid
+  (impassable cliff walls), so it is robust to the cost *numbers*, though it
+  does depend on the grid topology being the island's.
+
+In short: the package's contribution is deterministic, reproducible
+computation over explicitly declared assumptions. Figures are recomputable to
+the last unit, but they should be read as "exact given these invented
+parameters", never as empirical estimates. This is the honest scope of the
+whole suite, and it is enforced by the test gates rather than stated once.

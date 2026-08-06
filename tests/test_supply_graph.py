@@ -14,6 +14,7 @@ from live_and_let_die.supply_graph import (
     SUPER_SOURCE,
     Edge,
     Node,
+    SupplyGraph,
     _flow_graph,
     analyze_san_monique,
     build_supply_graph,
@@ -188,3 +189,67 @@ def test_cut_classification_distinguishes_physical_legs() -> None:
     assert classes["physical"] == [("airfield", "miami")]
     assert classes["virtual"] == [("SUPPLY", "poppy_fields"), ("miami", "DEMAND")]
     assert classify_cut_edges(())["physical"] == []
+
+
+def test_dijkstra_rejects_stale_heap_entry_via_cheaper_reroute() -> None:
+    """The stale-heap guard (``cost > dist[node]``) fires on a re-relaxed node.
+
+    ``a`` is reached twice: directly at cost 6 (pushed first), then more cheaply
+    at cost 2 via ``b``. The cost-6 heap entry is popped later and must be
+    skipped, and the recovered path must be the cheaper one.
+    """
+    nodes = [
+        Node("s", "production", "S"),
+        Node("a", "transit", "A"),
+        Node("b", "transit", "B"),
+        Node("t", "market", "T"),
+    ]
+    edges = [
+        Edge("s", "a", 6.0, 10.0),
+        Edge("s", "b", 1.0, 10.0),
+        Edge("b", "a", 1.0, 10.0),
+        Edge("a", "t", 1.0, 10.0),
+    ]
+    graph = SupplyGraph(nodes, edges)
+    cost, path = graph.shortest_path("s", "t")
+    assert cost == 3.0
+    assert path == ("s", "b", "a", "t")
+
+
+def test_max_flow_handles_zero_capacity_edge() -> None:
+    """A zero-capacity edge must not stall Edmonds-Karp (``bottleneck <= 0``)."""
+    graph = SupplyGraph(
+        [Node("s", "production", "S"), Node("m", "market", "T")],
+        [Edge("s", "m", 1.0, 0.0)],
+    )
+    assert graph.max_flow("s", "m") == 0.0
+
+
+def test_physical_min_cut_reports_transit_limited() -> None:
+    """A cut landing on a physical leg is *not* demand-limited.
+
+    The canonical instance's cut is entirely virtual demand edges, so
+    ``min_cut_is_demand_limited`` is always True there. This fixture — a single
+    physical leg as the operative bottleneck — exercises the other branch, i.e.
+    the ``"transit-limited"`` reporting path that no canonical input reaches.
+    """
+    nodes = [
+        Node("SUPPLY", "production", "S"),
+        Node("a", "transit", "A"),
+        Node("m", "market", "M"),
+        Node("DEMAND", "market", "D"),
+    ]
+    edges = [
+        Edge("SUPPLY", "a", 0.0, 100.0),
+        Edge("a", "m", 5.0, 5.0),  # the physical bottleneck
+        Edge("m", "DEMAND", 0.0, 100.0),
+    ]
+    graph = SupplyGraph(nodes, edges)
+    assert graph.max_flow("SUPPLY", "DEMAND") == 5.0
+    cut_value, cut_edges = graph.min_cut("SUPPLY", "DEMAND")
+    classes = classify_cut_edges(cut_edges)
+    assert classes["physical"] == [("a", "m")]
+    assert cut_value == 5.0
+    # The reporting invariant: a physical leg ensures the cut is not reported
+    # as demand-limited (i.e. it names a severable asset -> "transit-limited").
+    assert classes["physical"]

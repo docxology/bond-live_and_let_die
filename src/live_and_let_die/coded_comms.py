@@ -22,7 +22,7 @@ __all__ = [
     "ENGLISH_FREQUENCIES",
     "KEYWORD",
     "ROSTER_SYMBOLS",
-    "SAN_MONIQUE_MESSAGE",
+    "san_monique_message",
     "build_keyword_key",
     "decipher",
     "encipher",
@@ -229,12 +229,14 @@ def symbol_roster(alphabet: str = ALPHABET) -> dict[str, str]:
     return {ch: sym for ch, sym in zip(alphabet, symbols)}
 
 
-def SAN_MONIQUE_MESSAGE(key: Mapping[str, str] | None = None) -> tuple[str, str]:
+def san_monique_message(key: Mapping[str, str] | None = None) -> tuple[str, str]:
     """Return ``(plaintext, ciphertext)`` for the canonical San Monique message.
 
-    Upper-cased like the canonical datasets it derives from, but a *function*,
-    not a constant: the ciphertext depends on the key. If ``key`` is omitted the
+    A *named function*, not a SCREAMING_CASE constant: the ciphertext depends on
+    the key, so it is not a compile-time literal. If ``key`` is omitted the
     canonical keyword key is used, so the ciphertext is stable across calls.
     """
+    resolved = key if key is not None else build_keyword_key()
+    return SAN_MONIQUE_PLAINTEXT, encipher(SAN_MONIQUE_PLAINTEXT, resolved)
     resolved = key if key is not None else build_keyword_key()
     return SAN_MONIQUE_PLAINTEXT, encipher(SAN_MONIQUE_PLAINTEXT, resolved)

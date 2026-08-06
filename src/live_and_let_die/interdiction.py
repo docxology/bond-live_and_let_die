@@ -67,10 +67,17 @@ class InterdictionPlan:
     gains: tuple[float, ...]
 
     def cost_effectiveness(self) -> float:
-        """Throughput reduction per severed leg (>0 iff ``budget`` > 0)."""
-        if self.budget <= 0:
+        """Throughput reduction per *actually severed* leg (>0 iff any leg severed).
+
+        Defined over ``len(self.severed)`` rather than the requested ``budget``:
+        when the budget exceeds the severable set (or the operation collapses
+        early), dividing by the requested budget would understate how much each
+        severed leg achieved — the metric is per severed leg, not per allocated
+        budget.
+        """
+        if not self.severed:
             return 0.0
-        return float(self.reduction / self.budget)
+        return float(self.reduction / len(self.severed))
 
 
 def canonical_flow_graph() -> SupplyGraph:
@@ -165,15 +172,23 @@ def greedy_interdiction(
         best_leg: tuple[str, str] | None = None
         best_drop = -1.0
         removed_set = frozenset(removed)
+        current = cumulative[-1] if cumulative else 0.0  # reduction already achieved
         for leg in legs:
             if leg in removed_set:
                 continue
-            drop = base - _without(graph, removed_set | {leg}).max_flow(source, sink)
-            if drop > best_drop + _EPS:
-                best_drop = drop
+            # Total reduction (from the original base) if this leg were also
+            # severed; its *marginal* contribution is the excess over ``current``.
+            total_drop = base - _without(graph, removed_set | {leg}).max_flow(source, sink)
+            if total_drop > best_drop:
+                best_drop = total_drop
                 best_leg = leg
         if best_leg is None:
             break  # nothing left to sever
+        if best_drop - current <= _EPS:
+            # Every remaining leg adds (at most) zero additional reduction —
+            # the operation has already collapsed to its floor. Stop rather
+            # than spending budget on strikes that achieve nothing.
+            break
         removed.append(best_leg)
         cumulative.append(best_drop)
     # Convert cumulative drops into per-sever marginal gains (they sum to
