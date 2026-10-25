@@ -44,7 +44,8 @@ Verification gates (see README):
 
 ```
 uv run pytest tests/ --cov=src --cov-fail-under=90
-uv run ruff check src/ scripts/
-uv run mypy src/
+uv run ruff check src/ scripts/ tests/
+uv run ruff format --check src/ scripts/ tests/
+uv run mypy src/ scripts/
 rg -n "template[_]code_project" .   # expectation: zero
 ```

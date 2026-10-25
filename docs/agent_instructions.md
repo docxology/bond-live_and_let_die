@@ -6,7 +6,8 @@ Operational constraints for AI agents modifying this PROJECT BOND film package.
 
 - **Scope**: work only inside this package directory. Never touch sibling BOND
   packages, bond root files, or the template repo.
-- **Local-only**: no remote, never push. Commit path-scoped inside this repo.
+- **Commit scope**: commit path-scoped inside this repo (`origin` is the GitHub
+  `docxology/bond-live_and_let_die` remote); never force-push or rewrite history.
 - **Protocol**: implement / depend on the FROZEN `bond_api` types; do not invent
   your own `MissionProvider` protocol. `src/live_and_let_die/mission.py` is the
   thin adapter; the pure domain core must remain importable without `bond_api`.

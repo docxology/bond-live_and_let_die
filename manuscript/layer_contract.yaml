@@ -4,7 +4,7 @@
 
 infrastructure_boundary:
   enforced: true
-  rule: "src/live_and_let_die/{supply_graph,coded_comms,island_ops}.py are pure; no infrastructure.* and no bond_api imports"
+  rule: "src/live_and_let_die/{supply_graph,interdiction,coded_comms,voodoo_drums,market_flow,island_ops}.py are pure; no infrastructure.* and no bond_api imports"
   exempt:
     - src/live_and_let_die/mission.py
     - src/live_and_let_die/manuscript_variables.py
@@ -13,9 +13,14 @@ architectural_layers:
   - name: "domain core"
     modules:
       - "src/live_and_let_die/supply_graph.py"
+      - "src/live_and_let_die/interdiction.py"
       - "src/live_and_let_die/coded_comms.py"
+      - "src/live_and_let_die/voodoo_drums.py"
+      - "src/live_and_let_die/market_flow.py"
       - "src/live_and_let_die/island_ops.py"
-    imports: ["stdlib", "numpy"]
+    # stdlib only: interdiction and market_flow import supply_graph; none of the
+    # six imports numpy, matplotlib, bond_api, or infrastructure.*
+    imports: ["stdlib"]
   - name: "protocol adapter"
     modules: ["src/live_and_let_die/mission.py"]
     imports: ["bond_api.protocol", "bond_api.registry", "domain core"]

@@ -1,5 +1,5 @@
 # LIVE AND LET DIE — SAN MONIQUE · PROJECT BOND film package (Phase 2)
-# Inherits workspace settings from root pyproject.toml.
+# Standalone package: this pyproject is self-contained (no workspace root).
 
 [build-system]
 requires = ["setuptools>=61.0"]
@@ -33,7 +33,20 @@ dev = [
 [tool.uv.sources]
 # Local path dependency: the FROZEN bond-api MissionProvider protocol (Layer 1).
 # bond-api is phase-1 complete and frozen; film providers code against it.
-bond-api = { path = "/Users/4d/Documents/GitHub/template/projects/working/bond/bond-api" }
+# The whole BOND suite is checked out as siblings, so this resolves on any
+# machine (same form as the other film packages).
+bond-api = { path = "../bond-api" }
+
+[tool.ruff]
+# Self-contained rule set so a config above this package cannot leak in (the
+# package is standalone; bond-cli carries the same guard). 120 is the width the
+# code is already written in — the longest line in the repo is exactly 120 and
+# `ruff format --check` accepts every file at this width unchanged.
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F"]
 
 [tool.pytest.ini_options]
 pythonpath = [".", "src"]
@@ -62,7 +75,7 @@ exclude_lines = [
 ]
 
 [tool.mypy]
-# Project-local mypy (the monorepo root has no mypy_path for this src/ layout).
+# Project-local mypy config: `mypy_path` points at this package's `src/` layout.
 python_version = "3.12"
 mypy_path = ["src"]
 explicit_package_bases = true
@@ -76,4 +89,4 @@ warn_unused_ignores = true
 ignore_missing_imports = true
 
 [tool.uv]
-# Inherits workspace settings from root pyproject.toml.
+# No uv workspace: dependencies resolve from PyPI plus the sibling `../bond-api`.
