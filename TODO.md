@@ -4,14 +4,15 @@
 mission software for Kananga's San Monique narcotics operation, built as six
 stdlib-only domain modules (supply graph, interdiction, ciphers, drum codec,
 market economics, terrain routing) behind the frozen BOND-API `MissionProvider`
-adapter in `src/live_and_let_die/mission.py`. Verified state as of 2026-08-05,
-measured after the manuscript-determinism fix: **130 tests passing, 0 failing, 0
-skipped; 97.89% line+branch coverage on `src/`** (1012 statements / 312
-branches, 11 statements + 17 branches uncovered) against a 90% gate. `ruff
-check`, `ruff format --check`, `mypy src/ scripts/` and
-`scripts/00_preflight.py` all pass. `docs/_generated/COUNTS.md` matches this run
-exactly — no drift. Every item below is open work someone still has to do;
-completed work is not tracked here.
+adapter in `src/live_and_let_die/mission.py`. Verified state as of 2026-10-25:
+**139 tests passing, 0 failing, 0 skipped; 98.64% line+branch coverage on
+`src/`** (1013 statements / 312 branches, 7 statements + 11 partial branches
+uncovered) against a 90% gate. `ruff check`, `ruff format --check`,
+`mypy src/ scripts/` and `scripts/00_preflight.py` all pass.
+`docs/_generated/COUNTS.md` matches this run exactly — no drift. Items below
+that were closed after this list was written are marked **(closed)** and carry
+their fix and evidence in the Round-2 section; everything unmarked is still open
+work.
 
 ## Open work
 
