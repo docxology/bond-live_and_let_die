@@ -35,13 +35,15 @@ dev = [
 # bond-api is phase-1 complete and frozen; film providers code against it.
 # The whole BOND suite is checked out as siblings, so this resolves on any
 # machine (same form as the other film packages).
-bond-api = { path = "../bond-api" }
+bond-api = { path = "vendor/bond-api" }
 
 [tool.ruff]
 # Self-contained rule set so a config above this package cannot leak in (the
 # package is standalone; bond-cli carries the same guard). 120 is the width the
 # code is already written in — the longest line in the repo is exactly 120 and
 # `ruff format --check` accepts every file at this width unchanged.
+# The vendored copies are byte-identical to upstream and must stay that way.
+extend-exclude = ["vendor"]
 line-length = 120
 target-version = "py310"
 
@@ -76,6 +78,8 @@ exclude_lines = [
 
 [tool.mypy]
 # Project-local mypy config: `mypy_path` points at this package's `src/` layout.
+# Vendored copies are a dependency; their bytes are bound by scripts/vendor.py.
+exclude = ["(^|/)vendor/"]
 python_version = "3.12"
 mypy_path = ["src"]
 explicit_package_bases = true
