@@ -56,7 +56,9 @@ are all still uncovered in that same report.
 
 | # | Item |
 | --- | --- |
-| D1 | **`docs/_generated/COUNTS.md` is not generated and nothing binds it.** The path says `_generated/`, the file says "Regenerate (run the suite) rather than hand-edit" — but there is no generator anywhere (`scripts/` contains only the mission CLIs, figures, and manuscript hydration; `rg -l COUNTS scripts/ src/ tests/` finds only `tests/AGENTS.md`). Every number in it is hand-transcribed from a past run. It happens to be exactly right today (verified against this session's run: 125 tests, 97.86%, and all nine per-module percentages match), which is precisely why it will rot unnoticed. **Done** = either a `scripts/z_generate_counts.py` that writes the file from a real `pytest --cov` run, or a test that parses `COUNTS.md` and fails when the recorded test count / total coverage disagrees with the live measurement. **Command:** `uv run pytest tests/ -k counts -v`, or `uv run python scripts/z_generate_counts.py && git diff --exit-code docs/_generated/COUNTS.md`. |
+| D1 | **`docs/_generated/COUNTS.md` is not generated and nothing binds it.** The path says `_generated/`, the file says "Regenerate (run the suite) rather than hand-edit" — but there is no generator anywhere (`scripts/` contains only the mission CLIs, figures, and manuscript hydration; `rg -l COUNTS scripts/ src/ tests/` finds only `tests/AGENTS.md`). Every number in it is hand-transcribed from a past run. It happens to be exactly right today (verified against the 2026-11-04 run: 140 tests, 98.64%, and all nine per-module percentages match), which is precisely why it will rot unnoticed. **Done** = either a `scripts/z_generate_counts.py` that writes the file from a real `pytest --cov` run, or a test that parses `COUNTS.md` and fails when the recorded test count / total coverage disagrees with the live measurement. **Command:** `uv run pytest tests/ -k counts -v`, or `uv run python scripts/z_generate_counts.py && git diff --exit-code docs/_generated/COUNTS.md`. |
+| D2 | **The vendored copy is excluded from this package's lint gate, and this records what that exclusion changes.** `pyproject.toml` already declared this package's own rule set rather than inheriting one; the vendoring added `extend-exclude = ["vendor"]` to that table and `exclude = ["(^|/)vendor/"]` to `[tool.mypy]`. Measured at ruff 0.16.1 with a two-arm control that keeps the table in this file and varies only its body, whole-tree scope: `ruff check .` is rc=0 either way; `ruff format --check .` is rc=0 with the line (66 files already formatted) and **rc=1 without it** — one file would be reformatted, `vendor/bond-api/README.md:95:1`, itself a Markdown block, at 74 already formatted. The documented gate is scoped to `src/ scripts/ tests/` and moves only by the two files the vendoring adds (40 → 42, all formatted). The checker `scripts/vendor.py` conforms to this package's declared width: clean at 120, and `ruff format --check --line-length 88 scripts/vendor.py` reports one file to reformat. **Command:** `uv run ruff format --check . && uv run ruff format --check src/ scripts/ tests/`. |
+| D3 (closed) | **The verification checklist ran the formatter where it needed the check.** `docs/agent_instructions.md:66` said `uv run ruff format src/ scripts/ tests/` while the three other copies of that checklist (`AGENTS.md:35`, `TODO.md:144`, and this section's own block) said `ruff format --check`. As written it rewrites unformatted files and exits **0** either way, so it could not report the thing the checklist asks it to verify — the same shape as a check whose status is the formatter's. **Done, with both arms measured:** the old line against a deliberately misformatted file is rc=0 and rewrites the file (`1 file reformatted`); the fixed line is **rc=1** and reports `unformatted: File would be reformatted` without touching it. The line now reads `--check`. **Command:** `uv run ruff format --check src/ scripts/ tests/`. |
 
 Nothing else in the prose is stale: I re-read `README.md`, `AGENTS.md`,
 `docs/architecture.md`, `docs/agent_instructions.md`,
@@ -137,14 +139,14 @@ Run all of these from the package directory. If `uv` reports
 outside the sandbox.
 
 ```bash
-uv sync --extra dev                                        # deps incl. local bond-api path dep
+uv sync --extra dev                                        # deps incl. the vendored bond-api
 
-uv run pytest tests/ --cov=src --cov-fail-under=90         # 139 passed, 98.64% (gate 90%)
+uv run pytest tests/ --cov=src --cov-fail-under=90         # 140 passed, 98.64% (gate 90%) — measured 2026-11-04
 uv run ruff check src/ scripts/ tests/                     # All checks passed!
-uv run ruff format --check src/ scripts/ tests/            # 40 files already formatted
-uv run mypy src/ scripts/                                  # no issues in 20 source files
+uv run ruff format --check src/ scripts/ tests/            # 42 files already formatted (40 before vendor/bond-api arrived)
+uv run mypy src/ scripts/                                  # no issues in 21 source files (20 before scripts/vendor.py)
 uv run python scripts/00_preflight.py                      # PREFLIGHT PASS
-rg -n "template[_]code_project" .                          # expectation: zero matches
+rg -n "template[_]code_project" .                          # expectation: zero matches (rc=1, no output — measured 2026-11-04)
 git status --short                                         # clean after your commit(s)
 ```
 

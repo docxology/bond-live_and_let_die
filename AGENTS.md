@@ -6,14 +6,15 @@ FROZEN BOND-API mission protocol over a pure, deterministic domain core.
 ## Build
 
 ```bash
-uv sync --extra dev        # deps incl. the local bond-api path dependency
+uv sync --extra dev        # deps incl. the vendored bond-api (vendor/bond-api)
 ```
 
 `bond-api` is a local path dependency declared in `pyproject.toml`
-(`[tool.uv.sources]`). If it fails to resolve, the sibling `bond-api` package is
-missing — that is an environment problem, not a package problem. If `uv` reports
-`Failed to initialize cache`, the sandbox is blocking its cache directory; re-run
-outside the sandbox.
+(`[tool.uv.sources]`) and resolved against the copy recorded in
+`vendor/bond-api`; `scripts/vendor.py --check` verifies every recorded digest
+offline, and `tests/test_vendor_provenance.py` runs that inside the suite — no
+sibling checkout is needed. If `uv` reports `Failed to initialize cache`, the
+sandbox is blocking its cache directory; re-run outside the sandbox.
 
 ## Test
 

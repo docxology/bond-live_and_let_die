@@ -100,7 +100,7 @@ a `{{TOKEN}}`; none is typed into prose. Re-derive them with
 From this package directory:
 
 ```bash
-uv sync --extra dev        # installs deps incl. the local bond-api path dep
+uv sync --extra dev        # installs deps incl. the vendored bond-api (no sibling needed)
 ```
 
 ## Run the mission

@@ -13,14 +13,15 @@ uv run pytest tests/ --cov=src --cov-fail-under=90
 
 | Metric | Value |
 | --- | --- |
-| Tests passing | 139 |
+| Measured | 2026-11-04, Python 3.15.1, ruff 0.16.1 (lock's pin) |
+| Tests passing | 140 |
 | Tests failing | 0 |
 | Tests skipped | 0 |
 | Line + branch coverage on `src/` | 98.64% |
 | Coverage gate (`--cov-fail-under`) | 90% |
 | Statements / branches | 1013 / 312 |
-| ruff check + ruff format --check | clean on `src/`, `scripts/`, `tests/` |
-| mypy | clean (11 source files under `src/`) |
+| ruff check + ruff format --check | clean on `src/`, `scripts/`, `tests/` (42 files) |
+| mypy | clean (11 source files under `src/`; 21 under `src/` + `scripts/`) |
 
 ## Domain modules
 
