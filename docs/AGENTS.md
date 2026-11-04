@@ -39,7 +39,9 @@ proved it".
 - **Never use a mock.** No `unittest.mock`, `MagicMock`, or `mocker.patch`.
 - **Never use a bare `assert` as a verification gate in `scripts/`.** `python -O`
   strips asserts and the gate becomes an unconditional pass.
-- **Never touch a sibling package**, the bond root, or the template repo.
+- **Never touch a sibling package**, the bond root, or the template repo — and
+  never edit the recorded copy under `vendor/` in place: refresh it through
+  `scripts/vendor.py` and commit the result.
 
 ## 4. Prove it
 

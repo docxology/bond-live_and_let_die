@@ -60,10 +60,10 @@ To add a new reported number:
 ## Verification checklist (run before declaring done)
 
 ```bash
-uv sync --extra dev   # installs deps incl. the local bond-api path dependency
+uv sync --extra dev   # installs deps incl. the vendored bond-api (vendor/bond-api)
 uv run pytest tests/ --cov=src --cov-fail-under=90
 uv run ruff check src/ scripts/ tests/
-uv run ruff format src/ scripts/ tests/
+uv run ruff format --check src/ scripts/ tests/
 uv run mypy src/ scripts/
 rg -n "template[_]code_project" .        # expectation: zero (bracket-split so this
                                          # line cannot trip its own gate)

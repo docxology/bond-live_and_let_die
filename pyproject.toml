@@ -33,8 +33,10 @@ dev = [
 [tool.uv.sources]
 # Local path dependency: the FROZEN bond-api MissionProvider protocol (Layer 1).
 # bond-api is phase-1 complete and frozen; film providers code against it.
-# The whole BOND suite is checked out as siblings, so this resolves on any
-# machine (same form as the other film packages).
+# Resolved against the copy recorded in vendor/bond-api — upstream sha and
+# per-file digests in its PROVENANCE.json, verified offline by
+# `scripts/vendor.py --check` — so a clone resolves with no sibling checkout.
+# Refresh the copy through that script; never edit it in place.
 bond-api = { path = "vendor/bond-api" }
 
 [tool.ruff]
@@ -93,4 +95,5 @@ warn_unused_ignores = true
 ignore_missing_imports = true
 
 [tool.uv]
-# No uv workspace: dependencies resolve from PyPI plus the sibling `../bond-api`.
+# No uv workspace: dependencies resolve from PyPI plus the vendored copy in
+# `vendor/bond-api`.
