@@ -209,3 +209,7 @@ coverage; all gates green** (ruff, format, mypy, preflight, zero
 - `docs/_generated/COUNTS.md` was updated by hand from real measured runs (139 /
   98.64%); it is still not produced by a generator script (TODO D1 remains).
 - E1/E2/E3 unchanged (fleet / bond-root owned).
+
+## Workflowz review — 2026-11-10
+
+Coverage note: read the root agent guidance, README, existing TODO and Python/dependency/tool configuration; reviewed the supplied production excerpts for runtime behavior, intentional substitutions, deterministic figure handling and test-sensitive guards. No additional finding survives the packet's evidence gate. The Python record is `.python-version` `3.15` with `requires-python = ">=3.11"`; the `uv.lock` resolution was not supplied, so no interpreter or dependency upgrade is proposed. Re-review after a concrete failure or a relevant source change, checking the existing open C2, V2, V5, V6, V7 and D1 items against that changed source rather than duplicating them.
