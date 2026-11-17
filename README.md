@@ -7,6 +7,31 @@ on the Caribbean island of San Monique, built as one of 27 film packages in the
 BOND suite. It implements the FROZEN BOND-API `MissionProvider` protocol over a
 pure, infrastructure-free domain core.
 
+## Mission model
+
+```mermaid
+flowchart TD
+    accTitle: Live and Let Die implemented SAN MONIQUE mission analyses
+    accDescr: San Monique supply graph, keyword message, drum signal, terrain and fictional economic assumptions feed six pure domain analyses. Supply flow and budgeted interdiction, keyword deciphering and Morse drum decoding, price and purity propagation and terrain routing feed mission.py execute. The adapter returns a MissionOutcome with a canonical SHA-256 input hash and fixed-seed provenance, followed by computed debrief lessons.
+    I["SAN MONIQUE inputs<br/>Supply graph, keyword message, drums, terrain<br/>and fictional economic assumptions"]
+    G0["Supply graph and interdiction<br/>Dijkstra routes, demand-capped max flow<br/>Greedy and exact budgeted disruption"]
+    G1["Coded communications<br/>Keyword substitution deciphering<br/>Morse drum codec and rhythm signature"]
+    G2["Economics and island operations<br/>Price and purity propagation<br/>Terrain routing and crocodile exposure"]
+    I --> G0
+    I --> G1
+    I --> G2
+    O["mission.py: execute returns MissionOutcome<br/>Six analysis reports and provenance<br/>Canonical SHA-256 input hash and fixed seed"]
+    G0 --> O
+    G1 --> O
+    G2 --> O
+    O --> F["debrief: lessons from computed outcomes"]
+```
+
+The branches group implemented capabilities; they do not imply a runtime order.
+Economic parameters are invented for the fictional scenario, rather than empirical estimates.
+
+**Source map:** [`supply_graph.py`](src/live_and_let_die/supply_graph.py), [`interdiction.py`](src/live_and_let_die/interdiction.py); [`coded_comms.py`](src/live_and_let_die/coded_comms.py), [`voodoo_drums.py`](src/live_and_let_die/voodoo_drums.py); [`market_flow.py`](src/live_and_let_die/market_flow.py), [`island_ops.py`](src/live_and_let_die/island_ops.py); [`mission.py`](src/live_and_let_die/mission.py).
+
 ## Film → software
 
 *Live and Let Die* gives us a villain who is a head of state by day and a
