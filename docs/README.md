@@ -1,5 +1,7 @@
 # Docs — LIVE AND LET DIE / SAN MONIQUE
 
+[Package maintenance](package-maintenance.md) covers dependency and release records.
+
 Agent- and maintainer-facing documentation for the SAN MONIQUE film package:
 one of the 27 film packages in the PROJECT BOND suite, implementing the frozen
 `bond_api.MissionProvider` protocol over a pure, deterministic domain core.

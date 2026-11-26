@@ -1,5 +1,7 @@
 # AGENTS.md — working inside the SAN MONIQUE package
 
+[Package maintenance](package-maintenance.md) identifies the dependency and citation records.
+
 How an agent should operate in this package. Read this before editing anything;
 it is the shortest path from "I have a task" to "I changed the right file and
 proved it".
