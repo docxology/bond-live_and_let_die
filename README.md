@@ -1,6 +1,7 @@
 # LIVE AND LET DIE (1973) — SAN MONIQUE
 
-See [package maintenance](docs/package-maintenance.md) for dependency and citation records.
+For the distribution version, checkout Python selection, dependency sources,
+and citation records, see [package maintenance](docs/package-maintenance.md).
 
 **PROJECT BOND · film package** · mission codename **SAN MONIQUE**
 

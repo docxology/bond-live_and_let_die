@@ -1,5 +1,8 @@
 # AGENTS.md — LIVE AND LET DIE / SAN MONIQUE
 
+The [package maintenance guide](docs/package-maintenance.md) records the
+distribution identity, Python selection, dependency provenance, and citation metadata.
+
 This is a PROJECT BOND film package (codename **SAN MONIQUE**) implementing the
 FROZEN BOND-API mission protocol over a pure, deterministic domain core.
 
